@@ -1,0 +1,13 @@
+bin/
+obj/o
+.vs/
+*.user
+*.suo
+.idea/
+*.userprefs
+packages/
+*.log
+.env
+appsettings.Development.json
+.DS_Store
+Thumbs.db
