@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using HospitalCare.Domain.Entities;
+﻿using HospitalCare.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -13,11 +10,6 @@ namespace HospitalCare.Infrastructure.Persistence.Configurations
         {
             builder.HasKey(e => e.Id);
 
-            builder.Property(e => e.CreatedAt)
-                .IsRequired();
-
-            builder.Property(e => e.UpdatedAt)
-                .IsRequired();
         }
     }
 }

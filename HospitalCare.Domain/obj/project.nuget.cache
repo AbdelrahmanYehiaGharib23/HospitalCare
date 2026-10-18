@@ -1,8 +1,10 @@
 {
   "version": 2,
-  "dgSpecHash": "J4BQmjhN7kg=",
+  "dgSpecHash": "UIB6XRUpjI4=",
   "success": true,
   "projectFilePath": "D:\\Back_end_Revision\\Revision\\HospitalCare\\HospitalCare.Domain\\HospitalCare.Domain.csproj",
-  "expectedPackageFiles": [],
+  "expectedPackageFiles": [
+    "D:\\Back_end_Revision\\NUGET_PACKAGES\\system.security.cryptography.pkcs\\10.0.13\\system.security.cryptography.pkcs.10.0.13.nupkg.sha512"
+  ],
   "logs": []
 }

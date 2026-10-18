@@ -17,3 +17,4 @@ D:\Back_end_Revision\Revision\HospitalCare\HospitalCare.Infrastructure\obj\Debug
 D:\Back_end_Revision\Revision\HospitalCare\HospitalCare.Infrastructure\obj\Debug\net10.0\ref\HospitalCare.Infrastructure.dll
 D:\Back_end_Revision\Revision\HospitalCare\HospitalCare.Infrastructure\bin\Debug\net10.0\HospitalCare.Infrastructure.runtimeconfig.json
 D:\Back_end_Revision\Revision\HospitalCare\HospitalCare.Infrastructure\obj\Debug\net10.0\HospitalCare.Infrastructure.genruntimeconfig.cache
+D:\Back_end_Revision\Revision\HospitalCare\HospitalCare.Infrastructure\obj\Debug\net10.0\HospitalCare.Infrastructure.sourcelink.json

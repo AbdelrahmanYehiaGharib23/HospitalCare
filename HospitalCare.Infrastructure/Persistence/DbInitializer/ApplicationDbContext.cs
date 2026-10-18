@@ -1,75 +1,35 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Text;
+﻿using System.Reflection;
 using HospitalCare.Domain.Entities;
+using HospitalCare.Infrastructure.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 namespace HospitalCare.Infrastructure.Persistence.DbInitializer
 {
-    public class ApplicationDbContext : DbContext
-    {
-        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
-        {
 
+    public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
+    {
+        public ApplicationDbContext(
+            DbContextOptions<ApplicationDbContext> options)
+            : base(options)
+        {
         }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            base.OnModelCreating(modelBuilder);
+
             var assembly = Assembly.GetExecutingAssembly();
 
-            if (HasEntityTypeConfigurations(assembly))
-            {
-                modelBuilder.ApplyConfigurationsFromAssembly(assembly);
-            }
-
-            base.OnModelCreating(modelBuilder);
+            modelBuilder.ApplyConfigurationsFromAssembly(assembly);
         }
 
-        private static bool HasEntityTypeConfigurations(Assembly assembly)
-        {
-            return assembly.GetTypes().Any(type =>
-                !type.IsAbstract &&
-                !type.ContainsGenericParameters &&
-                type.GetInterfaces().Any(interfaceType =>
-                    interfaceType.IsGenericType &&
-                    interfaceType.GetGenericTypeDefinition() == typeof(IEntityTypeConfiguration<>)));
-        }
-
-        private void ApplyAuditInformation()
-        {
-            var entries = ChangeTracker.Entries<BaseEntity>();
-            var now = DateTime.UtcNow;
-
-            foreach (var entry in entries)
-            {
-                if (entry.State == EntityState.Added)
-                {
-                    entry.Entity.CreatedAt = now;
-                    entry.Entity.UpdatedAt = now;
-                }
-                else if (entry.State == EntityState.Modified)
-                {
-                    entry.Entity.UpdatedAt = now;
-                    entry.Property(e => e.CreatedAt).IsModified = false;
-                }
-            }
-        }
-
-        public override Task<int> SaveChangesAsync(
-            CancellationToken cancellationToken = default)
-        {
-            ApplyAuditInformation();
-
-            return base.SaveChangesAsync(cancellationToken);
-        }
-
-        public override int SaveChanges()
-        {
-            ApplyAuditInformation();
-
-            return base.SaveChanges();
-        }
-
+        public DbSet<Department> Departments => Set<Department>();
+        public DbSet<Doctor> Doctors => Set<Doctor>();
+        public DbSet<Patient> Patients => Set<Patient>();
+        public DbSet<Appointment> Appointments => Set<Appointment>();
+        public DbSet<AppointmentType> AppointmentTypes => Set<AppointmentType>();
+        public DbSet<DoctorSchedule> DoctorSchedules => Set<DoctorSchedule>();
+        public DbSet<PaymentTransaction> PaymentTransactions => Set<PaymentTransaction>();
     }
 }

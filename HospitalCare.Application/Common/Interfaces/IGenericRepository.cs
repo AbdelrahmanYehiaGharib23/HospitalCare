@@ -17,6 +17,7 @@ namespace HospitalCare.Application.Common.Interfaces
 
         void Update(TEntity entity);
 
-        Task<IEnumerable<TEntity>> FindAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default);
+        Task<IEnumerable<TEntity>> FindAsync(Expression<Func<TEntity, bool>> predicate, bool withTracking = false , CancellationToken cancellationToken = default);
+        
     }
 }

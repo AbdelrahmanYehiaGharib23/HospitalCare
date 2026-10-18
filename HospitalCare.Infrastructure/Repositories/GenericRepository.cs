@@ -50,14 +50,18 @@ namespace HospitalCare.Infrastructure.Repositories
         public void Update(TEntity entity)
             => _dbContext.Set<TEntity>().Update(entity);
 
-        public async Task<IEnumerable<TEntity>> FindAsync(
-            Expression<Func<TEntity, bool>> predicate,
-            CancellationToken cancellationToken = default)
+        public async Task<IEnumerable<TEntity>> FindAsync(Expression<Func<TEntity, bool>> predicate,bool withTracking = false,CancellationToken cancellationToken = default)
         {
-            return await _dbContext.Set<TEntity>()
-                .Where(predicate)
-                .AsNoTracking()
-                .ToListAsync(cancellationToken);
+            IQueryable<TEntity> query = _dbContext
+                .Set<TEntity>()
+                .Where(predicate);
+
+            if (!withTracking)
+            {
+                query = query.AsNoTracking();
+            }
+
+            return await query.ToListAsync(cancellationToken);
         }
     }
 }

@@ -1,22 +1,59 @@
 ﻿using HospitalCare.Application.Common.Interfaces;
+using HospitalCare.Infrastructure.Identity;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
-namespace HospitalCare.Infrastructure.Persistence.DbInitializer
-{
-    public class DbInitializer : IDbInitializer
-    {
-        private readonly ApplicationDbContext _dbContext;
+namespace HospitalCare.Infrastructure.Persistence.DbInitializer;
 
-        public DbInitializer(ApplicationDbContext dbContext)
+public class DbInitializer : IDbInitializer
+{
+    private static readonly string[] RequiredRoles =
+    [
+        "Admin",
+        "Doctor",
+        "Receptionist",
+        "Patient"
+    ];
+
+    private readonly ApplicationDbContext _dbContext;
+    private readonly RoleManager<IdentityRole> _roleManager;
+
+    public DbInitializer(
+        ApplicationDbContext dbContext,
+        RoleManager<IdentityRole> roleManager)
+    {
+        _dbContext = dbContext;
+        _roleManager = roleManager;
+    }
+
+    public void Initialize()
+    {
+        if (_dbContext.Database.GetPendingMigrations().Any())
         {
-            _dbContext = dbContext;
+            _dbContext.Database.Migrate();
         }
 
-        public void Initialize()
+        SeedRolesAsync().GetAwaiter().GetResult();
+    }
+
+    private async Task SeedRolesAsync()
+    {
+        foreach (var roleName in RequiredRoles)
         {
-            if (_dbContext.Database.GetPendingMigrations().Any())
+            if (await _roleManager.RoleExistsAsync(roleName))
             {
-                _dbContext.Database.Migrate();
+                continue;
+            }
+
+            var result = await _roleManager.CreateAsync(
+                new IdentityRole(roleName));
+
+            if (!result.Succeeded)
+            {
+                var errors = string.Join("; ",result.Errors.Select(error => error.Description));
+
+                throw new InvalidOperationException(
+                    $"Failed to seed role '{roleName}': {errors}");
             }
         }
     }

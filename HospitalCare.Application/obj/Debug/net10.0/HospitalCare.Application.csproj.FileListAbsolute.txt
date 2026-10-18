@@ -13,3 +13,4 @@ D:\Back_end_Revision\Revision\HospitalCare\HospitalCare.Application\obj\Debug\ne
 D:\Back_end_Revision\Revision\HospitalCare\HospitalCare.Application\obj\Debug\net10.0\refint\HospitalCare.Application.dll
 D:\Back_end_Revision\Revision\HospitalCare\HospitalCare.Application\obj\Debug\net10.0\HospitalCare.Application.pdb
 D:\Back_end_Revision\Revision\HospitalCare\HospitalCare.Application\obj\Debug\net10.0\ref\HospitalCare.Application.dll
+D:\Back_end_Revision\Revision\HospitalCare\HospitalCare.Application\obj\Debug\net10.0\HospitalCare.Application.sourcelink.json

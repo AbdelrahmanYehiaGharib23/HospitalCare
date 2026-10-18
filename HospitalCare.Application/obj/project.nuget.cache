@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "JOcKLoWDT5M=",
+  "dgSpecHash": "HXXCQYRiawM=",
   "success": true,
   "projectFilePath": "D:\\Back_end_Revision\\Revision\\HospitalCare\\HospitalCare.Application\\HospitalCare.Application.csproj",
   "expectedPackageFiles": [
@@ -13,7 +13,8 @@
     "D:\\Back_end_Revision\\NUGET_PACKAGES\\microsoft.identitymodel.abstractions\\8.14.0\\microsoft.identitymodel.abstractions.8.14.0.nupkg.sha512",
     "D:\\Back_end_Revision\\NUGET_PACKAGES\\microsoft.identitymodel.jsonwebtokens\\8.14.0\\microsoft.identitymodel.jsonwebtokens.8.14.0.nupkg.sha512",
     "D:\\Back_end_Revision\\NUGET_PACKAGES\\microsoft.identitymodel.logging\\8.14.0\\microsoft.identitymodel.logging.8.14.0.nupkg.sha512",
-    "D:\\Back_end_Revision\\NUGET_PACKAGES\\microsoft.identitymodel.tokens\\8.14.0\\microsoft.identitymodel.tokens.8.14.0.nupkg.sha512"
+    "D:\\Back_end_Revision\\NUGET_PACKAGES\\microsoft.identitymodel.tokens\\8.14.0\\microsoft.identitymodel.tokens.8.14.0.nupkg.sha512",
+    "D:\\Back_end_Revision\\NUGET_PACKAGES\\system.security.cryptography.pkcs\\10.0.13\\system.security.cryptography.pkcs.10.0.13.nupkg.sha512"
   ],
   "logs": []
 }
