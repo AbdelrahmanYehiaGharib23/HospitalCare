@@ -49,6 +49,10 @@ The webhook reads a raw UTF-8 JSON body with `gatewayReference`, `status` (`Succ
 
 Doctor schedules use local wall-clock time. Availability calculations use `Hospital:TimeZoneId`, which defaults to `Africa/Cairo`; the environment variable name is `Hospital__TimeZoneId`.
 
+## Authentication
+
+Login locks an account for 15 minutes after five failed password checks. The API allows ten login requests per minute per client IP; rejected requests return `429 Too Many Requests` as ProblemDetails.
+
 ## Database
 
 On startup, `DbInitializer` applies pending Entity Framework migrations and seeds the `Admin`, `Doctor`, `Receptionist`, and `Patient` roles.
@@ -75,6 +79,75 @@ To create a migration:
 ```powershell
 dotnet ef migrations add MigrationName --project HospitalCare.Infrastructure --startup-project HospitalCare.API --output-dir Persistence/Migrations
 ```
+
+## API endpoints
+
+All routes are under `/api`. Requests that require authentication use a JWT bearer token. Role names are `Admin`, `Doctor`, `Receptionist`, and `Patient`.
+
+| Endpoint | Access | Purpose |
+|---|---|---|
+| `POST /auth/register` | Anonymous | Register a Patient account and profile. |
+| `POST /auth/login` | Anonymous | Authenticate and return a JWT. |
+| `GET /departments` | Patient | List active Departments. |
+| `POST /departments`, `PUT /departments/{id}`, `POST /departments/{id}/deactivate` | Admin | Create, rename, or gracefully deactivate a Department. |
+| `GET /doctors`, `GET /doctors/{id}` | Admin, Patient | List or read Doctors; Patients see active Doctors. |
+| `POST /doctors`, `POST /doctors/{id}/deactivate` | Admin | Create a Doctor account or gracefully deactivate a Doctor. |
+| `GET /doctors/{id}/schedule` | Admin, Doctor, Patient | Read a schedule; Doctors can read their own, Patients active Doctors, and Admins any Doctor. |
+| `GET /doctors/{id}/available-dates` | Patient | Get dates with capacity for an appointment type and inclusive date range. |
+| `GET /doctors/{id}/queue` | Doctor, Receptionist | Read a paginated queue; Doctors can read their own queue. |
+| `POST /doctors/me/queue/call-next` | Doctor | Call the next checked-in Patient in the Doctor's queue for today. |
+| `POST /doctors/{id}/queue/call-next` | Receptionist | Call the next checked-in Patient for a Doctor today. |
+| `PUT /doctors/me/schedule` | Doctor | Replace the current Doctor's weekly schedule. |
+| `GET /appointment-types`, `POST /appointment-types`, `PUT /appointment-types/{id}` | Admin | List, create, or update appointment types and booking fees. |
+| `POST /receptionists` | Admin | Create a Receptionist account. |
+| `POST /appointments/payments` | Patient | Start payment for an appointment booking. |
+| `GET /appointments/me`, `GET /appointments/{id}` | Patient | Read the Patient's own appointments and queue rank. |
+| `POST /appointments/{id}/cancel` | Patient, Receptionist, Admin | Cancel an eligible appointment; Patients can cancel only their own. |
+| `POST /appointments/{id}/check-in` | Receptionist | Record a Patient's arrival. |
+| `POST /appointments/{id}/start`, `POST /appointments/{id}/complete` | Doctor | Start or complete an appointment in the Doctor's own queue. |
+| `GET /patients/me`, `PUT /patients/me`, `GET /patients/me/medical-history` | Patient | Read or update the Patient's own profile and medical history. |
+| `GET /patients/{id}/medical-history` | Doctor, Receptionist | Read a Patient's history; Doctors need an appointment record with that Patient. |
+| `POST /payments/webhook` | Anonymous, signed callback | Verify a payment callback. The internal Fake provider's request format is described above. |
+
+## Booking and queue behavior
+
+```mermaid
+flowchart TD
+    A[Patient selects Doctor, date, and appointment type] --> B[Check schedule and remaining capacity]
+    B -->|Does not fit| C[Reject booking request]
+    B -->|Fits| D[Create pending payment and checkout]
+    D --> E[Wait for signed payment callback]
+    E --> F[Verify callback and recheck capacity]
+    F -->|Capacity remains| G[Create queued appointment at next queue position]
+    F -->|Capacity filled| H[Refund payment]
+```
+
+No queue position is reserved while payment is pending. Queue positions are not reused; a Patient's displayed position is their rank among queued and in-progress appointments.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Queued: payment confirmed
+    Queued --> Queued: checked-in Patient called; five-minute window starts
+    Queued --> Queued: first missed call with a next Patient; swap positions
+    Queued --> InProgress: Doctor starts appointment
+    Queued --> Cancelled: Patient, Receptionist, or Admin cancels
+    InProgress --> Completed: Doctor completes appointment
+    InProgress --> Cancelled: Patient, Receptionist, or Admin cancels
+    Queued --> NoShowPenalized: second consecutive missed call
+```
+
+The first missed call remains queued and does not increment the skip count until there is a later queued Patient to swap with. A second consecutive missed call marks the appointment `NoShowPenalized`; its booking fee is retained. Queue estimates treat the day's schedule ranges as contiguous.
+
+## Design decisions
+
+- Doctor and Department deactivation stays pending while their queues drain; they accept no new bookings during that period.
+- Receptionists check Patients in. A Doctor or Receptionist calling a checked-in Patient starts the five-minute no-show window.
+- Schedule times are hospital-local wall-clock values. Timestamps are UTC; the hospital time zone defaults to `Africa/Cairo`.
+- Capacity uses appointment duration and remaining schedule time. Completed, cancelled, and no-show-penalized appointments do not consume pending capacity.
+- Appointment booking fees are stored on the appointment type in EGP. Refunds use the payment transaction ID as the idempotency key.
+- Payment integration is behind `IPaymentGateway`. Only the internal Fake provider is implemented; it does not contact a payment service.
+
+Sample requests are in `HospitalCare.API/HospitalCare.API.http`. Replace its IDs and bearer tokens with values from the API responses. Use today's hospital-local date for queue actions and calculate the Fake webhook signature from the exact JSON body.
 
 ## Run
 

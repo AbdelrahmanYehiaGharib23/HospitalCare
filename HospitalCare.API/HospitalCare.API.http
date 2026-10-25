@@ -1,6 +1,88 @@
 @HospitalCare.API_HostAddress = http://localhost:5074
 
-GET {{HospitalCare.API_HostAddress}}/weatherforecast/
-Accept: application/json
+@PatientToken = paste-patient-token-here
+@DoctorToken = paste-doctor-token-here
+@ReceptionistToken = paste-receptionist-token-here
+@DoctorId = 1
+@AppointmentTypeId = 1
+@AppointmentDate = YYYY-MM-DD
+@AppointmentId = 1
+@PaymentTransactionId = 1
+@FakeWebhookSignature = calculate-hmac-sha256-for-the-exact-body
 
-###
+# Set this to a date from availability; queue actions require today's hospital-local date.
+
+### Register a Patient
+POST {{HospitalCare.API_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "name": "Example Patient",
+  "email": "patient@example.com",
+  "password": "Replace1!",
+  "phone": "01000000000",
+  "dateOfBirth": "1990-01-01"
+}
+
+### Log in
+POST {{HospitalCare.API_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "patient@example.com",
+  "password": "Replace1!"
+}
+
+### Find available dates
+GET {{HospitalCare.API_HostAddress}}/api/doctors/{{DoctorId}}/available-dates?appointmentTypeId={{AppointmentTypeId}}&from={{AppointmentDate}}&to={{AppointmentDate}}
+Accept: application/json
+Authorization: Bearer {{PatientToken}}
+
+### Start an appointment payment
+POST {{HospitalCare.API_HostAddress}}/api/appointments/payments
+Content-Type: application/json
+Authorization: Bearer {{PatientToken}}
+
+{
+  "doctorId": {{DoctorId}},
+  "appointmentTypeId": {{AppointmentTypeId}},
+  "requestedDate": "{{AppointmentDate}}"
+}
+
+### Confirm payment with the internal Fake provider
+POST {{HospitalCare.API_HostAddress}}/api/payments/webhook
+Content-Type: application/json
+X-Payment-Signature: {{FakeWebhookSignature}}
+
+{
+  "gatewayReference": "fake-{{PaymentTransactionId}}",
+  "status": "Succeeded",
+  "amount": 100,
+  "currency": "EGP"
+}
+
+### Read the Doctor's queue
+GET {{HospitalCare.API_HostAddress}}/api/doctors/{{DoctorId}}/queue?date={{AppointmentDate}}
+Accept: application/json
+Authorization: Bearer {{DoctorToken}}
+
+### Check in the Patient
+POST {{HospitalCare.API_HostAddress}}/api/appointments/{{AppointmentId}}/check-in
+Authorization: Bearer {{ReceptionistToken}}
+
+### Call the next checked-in Patient
+POST {{HospitalCare.API_HostAddress}}/api/doctors/me/queue/call-next?date={{AppointmentDate}}
+Authorization: Bearer {{DoctorToken}}
+
+### Start the appointment
+POST {{HospitalCare.API_HostAddress}}/api/appointments/{{AppointmentId}}/start
+Authorization: Bearer {{DoctorToken}}
+
+### Complete the appointment
+POST {{HospitalCare.API_HostAddress}}/api/appointments/{{AppointmentId}}/complete
+Content-Type: application/json
+Authorization: Bearer {{DoctorToken}}
+
+{
+  "notes": "Consultation completed."
+}
