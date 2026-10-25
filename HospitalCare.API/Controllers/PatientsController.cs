@@ -1,6 +1,7 @@
 ﻿using HospitalCare.Application.Common.Constants;
 using HospitalCare.Application.Features.Patients.Commands;
 using HospitalCare.Application.Features.Patients.DTOs;
+using HospitalCare.Application.Features.Patients.Queries;
 using HospitalCare.Application.Features.Patients.Queries.GetMyPatientProfile;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -10,7 +11,6 @@ namespace HospitalCare.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = Roles.Patient)]
 public sealed class PatientsController : ControllerBase
 {
     private readonly ISender _sender;
@@ -21,6 +21,7 @@ public sealed class PatientsController : ControllerBase
     }
 
     [HttpGet("me")]
+    [Authorize(Roles = Roles.Patient)]
     public async Task<IActionResult> GetMyProfile(CancellationToken cancellationToken)
     {
         var result = await _sender.Send(
@@ -32,6 +33,7 @@ public sealed class PatientsController : ControllerBase
 
 
     [HttpPut("me")]
+    [Authorize(Roles = Roles.Patient)]
     public async Task<ActionResult<PatientDto>> UpdateMyProfile(
         UpdateMyPatientProfileCommand command,
         CancellationToken cancellationToken)
@@ -41,5 +43,29 @@ public sealed class PatientsController : ControllerBase
         return Ok(patientDto);
     }
 
+    [HttpGet("me/medical-history")]
+    [Authorize(Roles = Roles.Patient)]
+    public async Task<ActionResult<PatientMedicalHistoryDto>>
+        GetMyMedicalHistory(CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(
+            new GetPatientMedicalHistoryQuery(null),
+            cancellationToken);
 
+        return Ok(result);
+    }
+
+    [HttpGet("{id:int}/medical-history")]
+    [Authorize(Roles = Roles.Doctor + "," + Roles.Receptionist)]
+    public async Task<ActionResult<PatientMedicalHistoryDto>>
+        GetPatientMedicalHistory(
+            int id,
+            CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(
+            new GetPatientMedicalHistoryQuery(id),
+            cancellationToken);
+
+        return Ok(result);
+    }
 }

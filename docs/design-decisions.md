@@ -22,3 +22,4 @@
 - Refund requests use the payment transaction ID as their idempotency key so an external refund can be retried after a transient failure.
 - `RefundPending` records a confirmed payment awaiting external refund completion; database state commits before the gateway refund call so retries cannot lose the refund request.
 - Queue estimates start from the earliest schedule range, treat the day's ranges as contiguous, and use actual completed times to adjust following estimates; missing schedules produce no estimate.
+- Doctor medical-history access requires an appointment record for that Doctor and Patient; the BRD does not limit access by appointment status or date.

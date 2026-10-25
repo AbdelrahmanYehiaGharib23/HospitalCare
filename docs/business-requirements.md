@@ -176,6 +176,7 @@ Appointment     (1) ── (1) PaymentTransaction
 - `GetPatientAppointmentsQuery`
 - `GetDoctorQueueForDateQuery` — includes computed estimated delay per queued patient
 - `GetAppointmentByIdQuery`
+- `GetPatientMedicalHistoryQuery`
 
 ## 9. Open Items (implementation-level, not blocking)
 
