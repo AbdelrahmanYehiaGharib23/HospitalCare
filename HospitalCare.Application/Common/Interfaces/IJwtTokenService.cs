@@ -8,5 +8,6 @@ public interface IJwtTokenService
         string userId,
         string email,
         IEnumerable<string> roles,
-        string? patientId = null);
+        string? patientId = null,
+        string? doctorId = null);
 }

@@ -6,6 +6,8 @@ public interface ICurrentUserService
 
     string? PatientId { get; }
 
+    string? DoctorId { get; }
+
     string? Email { get; }
 
     bool IsAuthenticated { get; }

@@ -22,7 +22,8 @@ public class JwtTokenService : IJwtTokenService
         string userId,
         string email,
         IEnumerable<string> roles,
-        string? patientId = null)
+        string? patientId = null,
+        string? doctorId = null)
     {
         var issuedAt = DateTime.UtcNow;
         var expiresAt = issuedAt.AddMinutes(
@@ -39,6 +40,11 @@ public class JwtTokenService : IJwtTokenService
         if (!string.IsNullOrWhiteSpace(patientId))
         {
             claims.Add(new Claim("patientId", patientId));
+        }
+
+        if (!string.IsNullOrWhiteSpace(doctorId))
+        {
+            claims.Add(new Claim("doctorId", doctorId));
         }
 
         claims.AddRange(

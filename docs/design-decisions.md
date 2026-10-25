@@ -5,3 +5,4 @@
 - Seeded appointment booking fees are sample values: 100 EGP for Consultation and 50 EGP for Follow-up.
 - Existing appointment types receive 100 EGP during the fee migration, or 50 EGP when named Follow-up.
 - Department updates change the name only; deactivation follows the graceful queue rule planned for M6.
+- Doctor.UserId remains nullable for existing rows; newly created doctor profiles link to an Identity user.

@@ -8,6 +8,8 @@ namespace HospitalCare.Domain.Entities
     {
         public string Name { get; set; } = string.Empty;
 
+        public string? UserId { get; set; }
+
         public int DepartmentId { get; set; }
 
         public bool IsActive { get; set; } = true;

@@ -130,6 +130,82 @@ public class IdentityService : IIdentityService
         return await GenerateTokenAsync(user);
     }
 
+    public async Task<Doctor> CreateDoctorAsync(
+        string name,
+        string email,
+        string password,
+        int departmentId,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        await using var transaction =
+            await _dbContext.Database.BeginTransactionAsync(
+                cancellationToken);
+
+        try
+        {
+            if (await _userManager.FindByEmailAsync(email) is not null)
+            {
+                throw new ConflictException(
+                    "An account with this email already exists.");
+            }
+
+            var user = new ApplicationUser
+            {
+                UserName = email,
+                Email = email
+            };
+
+            var createResult = await _userManager.CreateAsync(user, password);
+
+            if (!createResult.Succeeded)
+            {
+                throw new BusinessRuleException(
+                    FormatIdentityErrors(createResult.Errors));
+            }
+
+            if (!await _roleManager.RoleExistsAsync(Roles.Doctor))
+            {
+                var roleResult = await _roleManager.CreateAsync(
+                    new IdentityRole(Roles.Doctor));
+
+                if (!roleResult.Succeeded)
+                {
+                    throw new BusinessRuleException(
+                        FormatIdentityErrors(roleResult.Errors));
+                }
+            }
+
+            var roleAssignmentResult =
+                await _userManager.AddToRoleAsync(user, Roles.Doctor);
+
+            if (!roleAssignmentResult.Succeeded)
+            {
+                throw new BusinessRuleException(
+                    FormatIdentityErrors(roleAssignmentResult.Errors));
+            }
+
+            var doctor = new Doctor
+            {
+                UserId = user.Id,
+                Name = name,
+                DepartmentId = departmentId
+            };
+
+            _unitOfWork.Doctors.Add(doctor);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+
+            return doctor;
+        }
+        catch
+        {
+            await transaction.RollbackAsync(CancellationToken.None);
+            throw;
+        }
+    }
+
 
     private async Task<JwtTokenResult> GenerateTokenAsync(
         ApplicationUser user)
@@ -137,6 +213,7 @@ public class IdentityService : IIdentityService
         var roles = await _userManager.GetRolesAsync(user);
 
         string? patientId = null;
+        string? doctorId = null;
 
         if (roles.Contains(Roles.Patient))
         {
@@ -156,11 +233,31 @@ public class IdentityService : IIdentityService
             }
         }
 
+        if (roles.Contains(Roles.Doctor))
+        {
+            var doctors = await _unitOfWork.Doctors.FindAsync(
+                doctor => doctor.UserId == user.Id,
+                cancellationToken: CancellationToken.None);
+
+            var id = doctors
+                .Select(doctor => doctor.Id)
+                .FirstOrDefault();
+
+            if (id == 0)
+            {
+                throw new InvalidOperationException(
+                    "The doctor profile was not found.");
+            }
+
+            doctorId = id.ToString();
+        }
+
         return _jwtTokenService.GenerateToken(
             user.Id,
             user.Email ?? user.UserName ?? string.Empty,
             roles,
-            patientId);
+            patientId,
+            doctorId);
     }
 
 

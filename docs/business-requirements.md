@@ -34,7 +34,7 @@ Appointment     (1) ── (1) PaymentTransaction
 - `Id`, `Name`, `IsActive`
 
 **Doctor** *(extended)*
-- `Id`, `Name`, `DepartmentId`, `IsActive`, `PendingDeactivation`
+- `Id`, `UserId`, `Name`, `DepartmentId`, `IsActive`, `PendingDeactivation`
 
 **DoctorSchedule** *(new)*
 - `Id`, `DoctorId`, `DayOfWeek`, `StartTime`, `EndTime`

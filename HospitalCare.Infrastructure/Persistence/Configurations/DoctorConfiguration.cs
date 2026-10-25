@@ -1,4 +1,5 @@
 ﻿using HospitalCare.Domain.Entities;
+using HospitalCare.Infrastructure.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -16,6 +17,9 @@ namespace HospitalCare.Infrastructure.Persistence.Configurations
                 .IsRequired()
                 .HasMaxLength(200);
 
+            builder.Property(x => x.UserId)
+                .HasMaxLength(450);
+
             builder.Property(x => x.IsActive)
                 .HasDefaultValue(true);
 
@@ -25,6 +29,11 @@ namespace HospitalCare.Infrastructure.Persistence.Configurations
             builder.HasOne(x => x.Department)
                 .WithMany(x => x.Doctors)
                 .HasForeignKey(x => x.DepartmentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.HasOne<ApplicationUser>()
+                .WithOne()
+                .HasForeignKey<Doctor>(x => x.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             builder.HasMany(x => x.Schedules)

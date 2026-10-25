@@ -22,6 +22,9 @@ public sealed class CurrentUserService : ICurrentUserService
     public string? PatientId =>
         User?.FindFirst("patientId")?.Value;
 
+    public string? DoctorId =>
+        User?.FindFirst("doctorId")?.Value;
+
     public string? Email =>
         User?.FindFirst(ClaimTypes.Email)?.Value
         ?? User?.FindFirst("email")?.Value;
