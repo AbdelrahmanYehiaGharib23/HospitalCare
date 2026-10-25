@@ -99,15 +99,23 @@ internal sealed class HospitalCareApiFactory : WebApplicationFactory<Program>
     private sealed class EnsureCreatedDbInitializer : IDbInitializer
     {
         private readonly ApplicationDbContext _dbContext;
+        private readonly AppointmentTypeSeeder _appointmentTypeSeeder;
 
-        public EnsureCreatedDbInitializer(ApplicationDbContext dbContext)
+        public EnsureCreatedDbInitializer(
+            ApplicationDbContext dbContext,
+            AppointmentTypeSeeder appointmentTypeSeeder)
         {
             _dbContext = dbContext;
+            _appointmentTypeSeeder = appointmentTypeSeeder;
         }
 
         public void Initialize()
         {
             _dbContext.Database.EnsureCreated();
+            _appointmentTypeSeeder
+                .SeedAsync(_dbContext)
+                .GetAwaiter()
+                .GetResult();
         }
     }
 }
