@@ -164,6 +164,7 @@ Appointment     (1) ── (1) PaymentTransaction
 **Queries**
 - `GetDepartmentsQuery` *(already implemented)*
 - `GetDoctorsByDepartmentQuery`
+- `GetDoctorByIdQuery`
 - `GetDoctorScheduleQuery`
 - `GetDoctorAvailableDatesQuery` — takes an `AppointmentTypeId`, because a date may still fit a Follow-up but not a Consultation (BR-03)
 - `GetPatientAppointmentsQuery`

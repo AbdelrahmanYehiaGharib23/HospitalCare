@@ -6,3 +6,4 @@
 - Existing appointment types receive 100 EGP during the fee migration, or 50 EGP when named Follow-up.
 - Department updates change the name only; deactivation follows the graceful queue rule planned for M6.
 - Doctor.UserId remains nullable for existing rows; newly created doctor profiles link to an Identity user.
+- Patient doctor queries return active Doctors only; Admin can request inactive Doctors explicitly.

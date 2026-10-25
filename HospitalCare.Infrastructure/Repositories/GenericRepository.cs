@@ -43,12 +43,38 @@ namespace HospitalCare.Infrastructure.Repositories
                 .ToListAsync(cancellationToken);
         }
 
-        public async Task<PagedResult<TEntity>> GetPageAsync(
+        public Task<PagedResult<TEntity>> GetPageAsync(
             int pageNumber,
             int pageSize,
             CancellationToken cancellationToken = default)
         {
-            var query = _dbContext.Set<TEntity>().AsNoTracking();
+            return GetPageAsync(
+                _dbContext.Set<TEntity>(),
+                pageNumber,
+                pageSize,
+                cancellationToken);
+        }
+
+        public Task<PagedResult<TEntity>> GetPageAsync(
+            Expression<Func<TEntity, bool>> predicate,
+            int pageNumber,
+            int pageSize,
+            CancellationToken cancellationToken = default)
+        {
+            return GetPageAsync(
+                _dbContext.Set<TEntity>().Where(predicate),
+                pageNumber,
+                pageSize,
+                cancellationToken);
+        }
+
+        private static async Task<PagedResult<TEntity>> GetPageAsync(
+            IQueryable<TEntity> source,
+            int pageNumber,
+            int pageSize,
+            CancellationToken cancellationToken)
+        {
+            var query = source.AsNoTracking();
             var totalCount = await query.CountAsync(cancellationToken);
             var skip = (long)(pageNumber - 1) * pageSize;
 

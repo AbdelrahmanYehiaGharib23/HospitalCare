@@ -19,6 +19,12 @@ namespace HospitalCare.Application.Common.Interfaces
             int pageSize,
             CancellationToken cancellationToken = default);
 
+        Task<PagedResult<TEntity>> GetPageAsync(
+            Expression<Func<TEntity, bool>> predicate,
+            int pageNumber,
+            int pageSize,
+            CancellationToken cancellationToken = default);
+
         void Remove(TEntity entity);
 
         void Update(TEntity entity);
