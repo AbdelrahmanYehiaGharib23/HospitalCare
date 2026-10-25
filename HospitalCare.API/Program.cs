@@ -1,9 +1,11 @@
+using HospitalCare.API.ExceptionHandlers;
 using HospitalCare.Application;
 using HospitalCare.Application.Common.Interfaces;
-using HospitalCare.API.ExceptionHandlers;
 using HospitalCare.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.OpenApi;
+using Serilog;
+using Serilog.Events;
 
 namespace HospitalCare.API
 {
@@ -12,6 +14,22 @@ namespace HospitalCare.API
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+
+            builder.Host.UseSerilog((context, configuration) =>
+                configuration
+                    .MinimumLevel.Information()
+                    .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+                    // Exception messages may contain patient data; request logs retain status and duration.
+                    .MinimumLevel.Override(
+                        "Microsoft.AspNetCore.Diagnostics.ExceptionHandlerMiddleware",
+                        LogEventLevel.Fatal)
+                    .Enrich.FromLogContext()
+                    .WriteTo.Console()
+                    .WriteTo.File(
+                        context.Configuration["Serilog:FilePath"] ??
+                        "logs/hospitalcare-.log",
+                        rollingInterval: RollingInterval.Day,
+                        retainedFileCountLimit: 14));
 
             // Add services to the container.
 
@@ -68,6 +86,7 @@ namespace HospitalCare.API
             builder.Services.AddInfrastructure(builder.Configuration);
 
             var app = builder.Build();
+            app.UseSerilogRequestLogging();
             app.UseExceptionHandler();
 
             using (var scope = app.Services.CreateScope())

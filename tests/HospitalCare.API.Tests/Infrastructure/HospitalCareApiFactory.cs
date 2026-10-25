@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Serilog;
 
 namespace HospitalCare.API.Tests.Infrastructure;
 
@@ -14,15 +15,27 @@ internal sealed class HospitalCareApiFactory : WebApplicationFactory<Program>
 {
     private readonly SqliteConnection _connection = new("Data Source=:memory:");
     private readonly Dictionary<string, string?> _previousEnvironmentValues = new();
+    private bool _disposed;
+
+    public string LogDirectory { get; } = Path.Combine(
+        Path.GetTempPath(),
+        "HospitalCareApiTests",
+        Guid.NewGuid().ToString("N"));
+
+    public bool PreserveLogFilesOnDispose { get; set; }
 
     public HospitalCareApiFactory()
     {
+        Directory.CreateDirectory(LogDirectory);
         SetEnvironmentValue("ConnectionStrings__DefaultConnection", "Data Source=:memory:");
         SetEnvironmentValue(
             "Jwt__SecretKey",
             "HospitalCare integration test signing key with enough length");
         SetEnvironmentValue("Jwt__Issuer", "HospitalCare.API.Tests");
         SetEnvironmentValue("Jwt__Audience", "HospitalCare.API.Tests");
+        SetEnvironmentValue(
+            "Serilog__FilePath",
+            Path.Combine(LogDirectory, "hospitalcare-.log"));
         _connection.Open();
     }
 
@@ -44,16 +57,37 @@ internal sealed class HospitalCareApiFactory : WebApplicationFactory<Program>
 
     protected override void Dispose(bool disposing)
     {
+        if (_disposed)
+        {
+            return;
+        }
+
+        _disposed = true;
         base.Dispose(disposing);
 
-        if (disposing)
+        if (!disposing)
         {
-            _connection.Dispose();
-            foreach (var (key, value) in _previousEnvironmentValues)
-            {
-                Environment.SetEnvironmentVariable(key, value);
-            }
+            return;
         }
+
+        Log.CloseAndFlush();
+        _connection.Dispose();
+        foreach (var (key, value) in _previousEnvironmentValues)
+        {
+            Environment.SetEnvironmentVariable(key, value);
+        }
+
+        if (PreserveLogFilesOnDispose)
+        {
+            return;
+        }
+
+        foreach (var file in Directory.EnumerateFiles(LogDirectory))
+        {
+            File.Delete(file);
+        }
+
+        Directory.Delete(LogDirectory);
     }
 
     private void SetEnvironmentValue(string key, string value)
