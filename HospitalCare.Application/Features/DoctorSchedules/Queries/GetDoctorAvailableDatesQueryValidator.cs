@@ -5,6 +5,8 @@ namespace HospitalCare.Application.Features.DoctorSchedules.Queries;
 public sealed class GetDoctorAvailableDatesQueryValidator
     : AbstractValidator<GetDoctorAvailableDatesQuery>
 {
+    private const int MaximumRangeDays = 90;
+
     public GetDoctorAvailableDatesQueryValidator()
     {
         RuleFor(query => query.DoctorId)
@@ -14,6 +16,9 @@ public sealed class GetDoctorAvailableDatesQueryValidator
             .GreaterThan(0);
 
         RuleFor(query => query.To)
-            .GreaterThanOrEqualTo(query => query.From);
+            .GreaterThanOrEqualTo(query => query.From)
+            .Must((query, to) =>
+                to.DayNumber - query.From.DayNumber + 1 <= MaximumRangeDays)
+            .WithMessage("The requested date range cannot exceed 90 days.");
     }
 }

@@ -131,6 +131,7 @@ Appointment     (1) ── (1) PaymentTransaction
 | VR-06 | Complete Appointment | Only the assigned Doctor may complete it; only `InProgress` appointments may transition to `Completed` |
 | VR-07 | Deactivate Doctor | If the Doctor has `Queued`/`InProgress` appointments, deactivation is deferred (`PendingDeactivation = true`) instead of applied immediately |
 | VR-08 | Deactivate Department | Deactivation cascades VR-07 to every Doctor in the Department |
+| VR-09 | View Available Dates | The inclusive requested date range cannot exceed 90 calendar days |
 
 ## 7. Allowed / Forbidden Operations
 
@@ -188,3 +189,4 @@ Appointment     (1) ── (1) PaymentTransaction
 - `BookingFee` is stored per `AppointmentType` in EGP.
 - `QueuePosition` is assigned as the next value after the highest position for that Doctor and date, including cancelled appointments; a Patient sees their rank among `Queued` and `InProgress` appointments.
 - The configured payment provider is selected through `IPaymentGateway`; only the internal Fake provider is implemented until an external provider is explicitly approved.
+- Available-date queries accept an inclusive range of at most 90 calendar days.
