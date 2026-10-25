@@ -1,5 +1,6 @@
 ﻿using System.Linq.Expressions;
 using HospitalCare.Application.Common.Interfaces;
+using HospitalCare.Application.Common.Models;
 using HospitalCare.Domain.Entities;
 using HospitalCare.Infrastructure.Persistence.DbInitializer;
 using Microsoft.EntityFrameworkCore;
@@ -40,6 +41,37 @@ namespace HospitalCare.Infrastructure.Repositories
             return await _dbContext.Set<TEntity>()
                 .AsNoTracking()
                 .ToListAsync(cancellationToken);
+        }
+
+        public async Task<PagedResult<TEntity>> GetPageAsync(
+            int pageNumber,
+            int pageSize,
+            CancellationToken cancellationToken = default)
+        {
+            var query = _dbContext.Set<TEntity>().AsNoTracking();
+            var totalCount = await query.CountAsync(cancellationToken);
+            var skip = (long)(pageNumber - 1) * pageSize;
+
+            if (skip >= totalCount)
+            {
+                return new PagedResult<TEntity>(
+                    [],
+                    pageNumber,
+                    pageSize,
+                    totalCount);
+            }
+
+            var items = await query
+                .OrderBy(entity => entity.Id)
+                .Skip((int)skip)
+                .Take(pageSize)
+                .ToListAsync(cancellationToken);
+
+            return new PagedResult<TEntity>(
+                items,
+                pageNumber,
+                pageSize,
+                totalCount);
         }
 
         public void Remove(TEntity entity)

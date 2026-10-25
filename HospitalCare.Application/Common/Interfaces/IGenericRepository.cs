@@ -1,5 +1,6 @@
 ﻿
 using System.Linq.Expressions;
+using HospitalCare.Application.Common.Models;
 using HospitalCare.Domain.Entities;
 
 namespace HospitalCare.Application.Common.Interfaces
@@ -12,6 +13,11 @@ namespace HospitalCare.Application.Common.Interfaces
         void Add(TEntity entity);
 
         Task<IEnumerable<TEntity>> GetAllAsync(bool withTracking = false, CancellationToken cancellationToken = default);
+
+        Task<PagedResult<TEntity>> GetPageAsync(
+            int pageNumber,
+            int pageSize,
+            CancellationToken cancellationToken = default);
 
         void Remove(TEntity entity);
 
