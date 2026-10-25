@@ -28,6 +28,12 @@ namespace HospitalCare.Domain.Entities
 
         public string? Notes { get; set; }
 
+        public DateTime? CalledAt { get; set; }
+
+        public DateTime? CheckedInAt { get; set; }
+
+        public int SkipCount { get; set; }
+
         public Doctor Doctor { get; set; } = null!;
 
         public Patient Patient { get; set; } = null!;

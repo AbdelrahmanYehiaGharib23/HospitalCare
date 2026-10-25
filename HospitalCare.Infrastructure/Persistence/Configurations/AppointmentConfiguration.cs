@@ -18,6 +18,14 @@ namespace HospitalCare.Infrastructure.Persistence.Configurations
             builder.Property(x => x.Notes)
                 .HasMaxLength(2000);
 
+            builder.Property(x => x.CalledAt);
+
+            builder.Property(x => x.CheckedInAt);
+
+            builder.Property(x => x.SkipCount)
+                .HasDefaultValue(0)
+                .IsRequired();
+
             builder.Property(x => x.QueuePosition)
                 .IsRequired();
 
@@ -27,6 +35,9 @@ namespace HospitalCare.Infrastructure.Persistence.Configurations
         tableBuilder.HasCheckConstraint(
             "CK_Appointments_QueuePosition",
             "[QueuePosition] > 0");
+        tableBuilder.HasCheckConstraint(
+            "CK_Appointments_SkipCount",
+            "[SkipCount] >= 0");
     });
 
             builder.HasOne(x => x.Doctor)

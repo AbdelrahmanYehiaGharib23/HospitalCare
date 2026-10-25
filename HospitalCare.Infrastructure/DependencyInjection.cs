@@ -31,6 +31,7 @@ namespace HospitalCare.Infrastructure
             services.AddScoped<AppointmentTypeSeeder>();
             services.AddSingleton<TimeProvider>(TimeProvider.System);
             services.AddSingleton<DoctorCapacityCalculator>();
+            services.AddSingleton<QueueEstimator>();
 
             var paymentProvider = configuration["PaymentGateway:Provider"];
             if (!string.Equals(

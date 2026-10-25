@@ -42,6 +42,12 @@ namespace HospitalCare.Infrastructure.Persistence.Migrations
                     b.Property<int>("AppointmentTypeId")
                         .HasColumnType("int");
 
+                    b.Property<DateTime?>("CalledAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("CheckedInAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<int>("DoctorId")
                         .HasColumnType("int");
 
@@ -57,6 +63,11 @@ namespace HospitalCare.Infrastructure.Persistence.Migrations
 
                     b.Property<int>("QueuePosition")
                         .HasColumnType("int");
+
+                    b.Property<int>("SkipCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
@@ -77,6 +88,8 @@ namespace HospitalCare.Infrastructure.Persistence.Migrations
                     b.ToTable("Appointments", null, t =>
                         {
                             t.HasCheckConstraint("CK_Appointments_QueuePosition", "[QueuePosition] > 0");
+
+                            t.HasCheckConstraint("CK_Appointments_SkipCount", "[SkipCount] >= 0");
                         });
                 });
 

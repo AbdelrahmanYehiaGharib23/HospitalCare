@@ -6,6 +6,8 @@ using HospitalCare.Application.Features.Doctors.Queries;
 using HospitalCare.Application.Features.DoctorSchedules.Commands;
 using HospitalCare.Application.Features.DoctorSchedules.DTOs;
 using HospitalCare.Application.Features.DoctorSchedules.Queries;
+using HospitalCare.Application.Features.DoctorQueues.DTOs;
+using HospitalCare.Application.Features.DoctorQueues.Queries;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -85,6 +87,26 @@ public sealed class DoctorsController : ControllerBase
                 appointmentTypeId,
                 from,
                 to),
+            cancellationToken);
+
+        return Ok(result);
+    }
+
+    [HttpGet("{id:int}/queue")]
+    [Authorize(Roles = Roles.Doctor + "," + Roles.Receptionist)]
+    public async Task<ActionResult<PagedResult<DoctorQueueItemDto>>> GetQueueForDate(
+        int id,
+        [FromQuery, BindRequired] DateOnly date,
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await _sender.Send(
+            new GetDoctorQueueForDateQuery(
+                id,
+                date,
+                pageNumber,
+                pageSize),
             cancellationToken);
 
         return Ok(result);
