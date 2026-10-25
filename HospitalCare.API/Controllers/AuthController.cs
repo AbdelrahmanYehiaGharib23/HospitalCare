@@ -1,6 +1,7 @@
 ﻿using HospitalCare.Application.Authentication;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace HospitalCare.API.Controllers;
 
@@ -27,6 +28,7 @@ public sealed class AuthController : ControllerBase
     }
 
     [HttpPost("login")]
+    [EnableRateLimiting(RateLimitingPolicies.Login)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

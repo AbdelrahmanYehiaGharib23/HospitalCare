@@ -23,3 +23,4 @@
 - `RefundPending` records a confirmed payment awaiting external refund completion; database state commits before the gateway refund call so retries cannot lose the refund request.
 - Queue estimates start from the earliest schedule range, treat the day's ranges as contiguous, and use actual completed times to adjust following estimates; missing schedules produce no estimate.
 - Doctor medical-history access requires an appointment record for that Doctor and Patient; the BRD does not limit access by appointment status or date.
+- Login locks an account for 15 minutes after five failed password checks and limits each client IP to ten login requests per minute.

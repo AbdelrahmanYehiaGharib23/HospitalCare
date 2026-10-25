@@ -1,11 +1,15 @@
+using System.Text.Json;
 using HospitalCare.API.ExceptionHandlers;
 using HospitalCare.Application;
 using HospitalCare.Application.Common.Interfaces;
 using HospitalCare.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.OpenApi;
 using Serilog;
 using Serilog.Events;
+using System.Threading.RateLimiting;
 
 namespace HospitalCare.API
 {
@@ -36,6 +40,42 @@ namespace HospitalCare.API
             builder.Services.AddControllers();
             builder.Services.AddProblemDetails();
             builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+            builder.Services.AddRateLimiter(options =>
+            {
+                options.AddPolicy(
+                    RateLimitingPolicies.Login,
+                    context => RateLimitPartition.GetFixedWindowLimiter(
+                        context.Connection.RemoteIpAddress?.ToString() ??
+                        "unknown",
+                        _ => new FixedWindowRateLimiterOptions
+                        {
+                            PermitLimit = 10,
+                            Window = TimeSpan.FromMinutes(1),
+                            QueueLimit = 0,
+                            AutoReplenishment = true
+                        }));
+
+                options.OnRejected = async (context, cancellationToken) =>
+                {
+                    var response = context.HttpContext.Response;
+                    response.StatusCode = StatusCodes.Status429TooManyRequests;
+                    response.ContentType = "application/problem+json";
+
+                    await JsonSerializer.SerializeAsync(
+                        response.Body,
+                        new ProblemDetails
+                        {
+                            Type = "about:blank",
+                            Title = "Too Many Requests",
+                            Status = StatusCodes.Status429TooManyRequests,
+                            Detail = "Too many login attempts. Try again later.",
+                            Instance = context.HttpContext.Request.Path
+                                .ToString()
+                        },
+                        JsonSerializerOptions.Web,
+                        cancellationToken);
+                };
+            });
             // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
             builder.Services.AddOpenApi(options =>
             {
@@ -113,6 +153,8 @@ namespace HospitalCare.API
 
             app.UseHttpsRedirection();
 
+            app.UseRouting();
+            app.UseRateLimiter();
             app.UseAuthentication();
             app.UseAuthorization();
 

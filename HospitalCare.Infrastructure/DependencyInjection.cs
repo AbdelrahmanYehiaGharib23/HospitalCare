@@ -86,6 +86,11 @@ namespace HospitalCare.Infrastructure
                 {
                     options.User.RequireUniqueEmail = true;
 
+                    options.Lockout.AllowedForNewUsers = true;
+                    options.Lockout.MaxFailedAccessAttempts = 5;
+                    options.Lockout.DefaultLockoutTimeSpan =
+                        TimeSpan.FromMinutes(15);
+
                     options.Password.RequiredLength = 8;
                     options.Password.RequireDigit = true;
                     options.Password.RequireUppercase = true;

@@ -12,17 +12,22 @@ namespace HospitalCare.Infrastructure.Identity;
 public class IdentityService : IIdentityService
 {
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly SignInManager<ApplicationUser> _signInManager;
     private readonly RoleManager<IdentityRole> _roleManager;
     private readonly IJwtTokenService _jwtTokenService;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ApplicationDbContext _dbContext;
 
-    public IdentityService(UserManager<ApplicationUser> userManager,RoleManager<IdentityRole> roleManager,
+    public IdentityService(
+        UserManager<ApplicationUser> userManager,
+        SignInManager<ApplicationUser> signInManager,
+        RoleManager<IdentityRole> roleManager,
         IJwtTokenService jwtTokenService,
         IUnitOfWork unitOfWork,
         ApplicationDbContext dbContext)
     {
         _userManager = userManager;
+        _signInManager = signInManager;
         _roleManager = roleManager;
         _jwtTokenService = jwtTokenService;
         _unitOfWork = unitOfWork;
@@ -121,7 +126,10 @@ public class IdentityService : IIdentityService
         var user = await _userManager.FindByEmailAsync(email);
 
         if (user is null ||
-            !await _userManager.CheckPasswordAsync(user, password))
+            !(await _signInManager.CheckPasswordSignInAsync(
+                user,
+                password,
+                lockoutOnFailure: true)).Succeeded)
         {
             throw new UnauthorizedAccessException(
                 "Invalid email or password.");

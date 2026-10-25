@@ -6,6 +6,10 @@ using HospitalCare.API.Tests.Infrastructure;
 using HospitalCare.Application.Authentication;
 using HospitalCare.Application.Common.Models;
 using HospitalCare.Application.Features.Patients.DTOs;
+using HospitalCare.Infrastructure.Identity;
+using HospitalCare.Infrastructure.Persistence.DbInitializer;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 
 namespace HospitalCare.API.Tests.Authentication;
@@ -50,6 +54,89 @@ public sealed class PatientAuthenticationTests
         Assert.Equal(
             "Unauthorized",
             problem.RootElement.GetProperty("title").GetString());
+    }
+
+    [Fact]
+    public async Task Login_FiveFailedPasswordChecks_LocksAccount()
+    {
+        using var factory = new HospitalCareApiFactory();
+        using var client = factory.CreateClient();
+        var cancellationToken = TestContext.Current.CancellationToken;
+        const string email = "lockout@example.com";
+        const string password = "Password1!";
+
+        using var registrationResponse = await client.PostAsJsonAsync(
+            "/api/auth/register",
+            new RegisterPatientCommand(
+                "Lockout Patient",
+                email,
+                password,
+                "01000000000",
+                new DateOnly(1990, 1, 1)),
+            cancellationToken);
+        Assert.Equal(HttpStatusCode.OK, registrationResponse.StatusCode);
+
+        for (var attempt = 0; attempt < 5; attempt++)
+        {
+            using var failedResponse = await client.PostAsJsonAsync(
+                "/api/auth/login",
+                new LoginCommand(email, "WrongPassword1!"),
+                cancellationToken);
+
+            Assert.Equal(HttpStatusCode.Unauthorized, failedResponse.StatusCode);
+        }
+
+        using var lockedResponse = await client.PostAsJsonAsync(
+            "/api/auth/login",
+            new LoginCommand(email, password),
+            cancellationToken);
+        Assert.Equal(HttpStatusCode.Unauthorized, lockedResponse.StatusCode);
+
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider
+            .GetRequiredService<ApplicationDbContext>();
+        var user = await dbContext.Users
+            .AsNoTracking()
+            .SingleAsync(
+                candidate => candidate.Email == email,
+                cancellationToken);
+        var now = scope.ServiceProvider
+            .GetRequiredService<TimeProvider>()
+            .GetUtcNow();
+
+        Assert.True(user.LockoutEnd.HasValue && user.LockoutEnd.Value > now);
+    }
+
+    [Fact]
+    public async Task Login_EleventhRequestFromSameIp_ReturnsTooManyRequests()
+    {
+        using var factory = new HospitalCareApiFactory();
+        using var client = factory.CreateClient();
+        var cancellationToken = TestContext.Current.CancellationToken;
+
+        for (var attempt = 0; attempt < 10; attempt++)
+        {
+            using var failedResponse = await client.PostAsJsonAsync(
+                "/api/auth/login",
+                new LoginCommand(
+                    "missing-account@example.com",
+                    "Password1!"),
+                cancellationToken);
+
+            Assert.Equal(HttpStatusCode.Unauthorized, failedResponse.StatusCode);
+        }
+
+        using var limitedResponse = await client.PostAsJsonAsync(
+            "/api/auth/login",
+            new LoginCommand(
+                "missing-account@example.com",
+                "Password1!"),
+            cancellationToken);
+
+        Assert.Equal(HttpStatusCode.TooManyRequests, limitedResponse.StatusCode);
+        Assert.Equal(
+            "application/problem+json",
+            limitedResponse.Content.Headers.ContentType?.MediaType);
     }
 
     [Fact]
