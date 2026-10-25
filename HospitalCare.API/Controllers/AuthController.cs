@@ -1,5 +1,4 @@
-﻿using FluentValidation;
-using HospitalCare.Application.Authentication;
+﻿using HospitalCare.Application.Authentication;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -23,26 +22,8 @@ public sealed class AuthController : ControllerBase
         [FromBody] RegisterPatientCommand command,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            var result = await _sender.Send(command, cancellationToken);
-            return Ok(result);
-        }
-        catch (ValidationException exception)
-        {
-            return BadRequest(new
-            {
-                errors = exception.Errors.Select(error => new
-                {
-                    field = error.PropertyName,
-                    message = error.ErrorMessage
-                })
-            });
-        }
-        catch (InvalidOperationException exception)
-        {
-            return BadRequest(new { message = exception.Message });
-        }
+        var result = await _sender.Send(command, cancellationToken);
+        return Ok(result);
     }
 
     [HttpPost("login")]
@@ -53,28 +34,7 @@ public sealed class AuthController : ControllerBase
         [FromBody] LoginCommand command,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            var result = await _sender.Send(command, cancellationToken);
-            return Ok(result);
-        }
-        catch (ValidationException exception)
-        {
-            return BadRequest(new
-            {
-                errors = exception.Errors.Select(error => new
-                {
-                    field = error.PropertyName,
-                    message = error.ErrorMessage
-                })
-            });
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Unauthorized(new
-            {
-                message = "Invalid email or password."
-            });
-        }
+        var result = await _sender.Send(command, cancellationToken);
+        return Ok(result);
     }
 }

@@ -1,4 +1,5 @@
-﻿using HospitalCare.Application.Common.Interfaces;
+﻿using HospitalCare.Application.Common.Exceptions;
+using HospitalCare.Application.Common.Interfaces;
 using HospitalCare.Application.Features.Patients.DTOs;
 using MediatR;
 
@@ -33,7 +34,7 @@ public sealed class UpdateMyPatientProfileCommandHandler : IRequestHandler<Updat
 
         if (patient is null)
         {
-            throw new KeyNotFoundException("Patient profile not found.");
+            throw new NotFoundException("Patient profile not found.");
         }
 
         patient.Name = request.Name;

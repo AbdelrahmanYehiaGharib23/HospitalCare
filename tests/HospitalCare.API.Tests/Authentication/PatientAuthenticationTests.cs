@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text.Json;
 using HospitalCare.API.Tests.Infrastructure;
 using HospitalCare.Application.Authentication;
 using HospitalCare.Application.Common.Models;
@@ -21,6 +22,64 @@ public sealed class PatientAuthenticationTests
             TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Login_InvalidCredentials_ReturnsProblemDetails()
+    {
+        using var factory = new HospitalCareApiFactory();
+        using var client = factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync(
+            "/api/auth/login",
+            new LoginCommand("patient@example.com", "Password1!"),
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.Equal(
+            "application/problem+json",
+            response.Content.Headers.ContentType?.MediaType);
+
+        using var problem = await JsonDocument.ParseAsync(
+            await response.Content.ReadAsStreamAsync(
+                TestContext.Current.CancellationToken),
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(401, problem.RootElement.GetProperty("status").GetInt32());
+        Assert.Equal(
+            "Unauthorized",
+            problem.RootElement.GetProperty("title").GetString());
+    }
+
+    [Fact]
+    public async Task Register_InvalidCommand_ReturnsValidationProblemDetails()
+    {
+        using var factory = new HospitalCareApiFactory();
+        using var client = factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync(
+            "/api/auth/register",
+            new RegisterPatientCommand(
+                string.Empty,
+                "invalid-email",
+                string.Empty,
+                string.Empty,
+                new DateOnly(1990, 1, 1)),
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(
+            "application/problem+json",
+            response.Content.Headers.ContentType?.MediaType);
+
+        using var problem = await JsonDocument.ParseAsync(
+            await response.Content.ReadAsStreamAsync(
+                TestContext.Current.CancellationToken),
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(400, problem.RootElement.GetProperty("status").GetInt32());
+        Assert.True(
+            problem.RootElement.GetProperty("errors").EnumerateObject().Any());
     }
 
     [Fact]

@@ -1,4 +1,5 @@
-﻿using HospitalCare.Application.Common.Interfaces;
+﻿using HospitalCare.Application.Common.Exceptions;
+using HospitalCare.Application.Common.Interfaces;
 using HospitalCare.Application.Common.Models;
 using HospitalCare.Domain.Entities;
 using HospitalCare.Infrastructure.Persistence.DbInitializer;
@@ -58,7 +59,7 @@ public class IdentityService : IIdentityService
 
             if (!createResult.Succeeded)
             {
-                throw new InvalidOperationException(
+                throw new BusinessRuleException(
                     FormatIdentityErrors(createResult.Errors));
             }
 
@@ -69,7 +70,7 @@ public class IdentityService : IIdentityService
 
                 if (!roleResult.Succeeded)
                 {
-                    throw new InvalidOperationException(
+                    throw new BusinessRuleException(
                         FormatIdentityErrors(roleResult.Errors));
                 }
             }
@@ -79,7 +80,7 @@ public class IdentityService : IIdentityService
 
             if (!roleAssignmentResult.Succeeded)
             {
-                throw new InvalidOperationException(
+                throw new BusinessRuleException(
                     FormatIdentityErrors(roleAssignmentResult.Errors));
             }
 

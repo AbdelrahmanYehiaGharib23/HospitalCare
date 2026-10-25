@@ -1,5 +1,6 @@
 using HospitalCare.Application;
 using HospitalCare.Application.Common.Interfaces;
+using HospitalCare.API.ExceptionHandlers;
 using HospitalCare.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.OpenApi;
@@ -15,6 +16,8 @@ namespace HospitalCare.API
             // Add services to the container.
 
             builder.Services.AddControllers();
+            builder.Services.AddProblemDetails();
+            builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
             // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
             builder.Services.AddOpenApi(options =>
             {
@@ -65,6 +68,7 @@ namespace HospitalCare.API
             builder.Services.AddInfrastructure(builder.Configuration);
 
             var app = builder.Build();
+            app.UseExceptionHandler();
 
             using (var scope = app.Services.CreateScope())
             {
