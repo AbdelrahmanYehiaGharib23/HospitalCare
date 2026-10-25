@@ -9,6 +9,7 @@ namespace HospitalCare.Domain.Enums
         Pending = 1,
         Succeeded = 2,
         Failed = 3,
-        Refunded = 4
+        Refunded = 4,
+        RefundPending = 5
     }
 }

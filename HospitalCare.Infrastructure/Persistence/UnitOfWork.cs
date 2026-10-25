@@ -1,12 +1,16 @@
-﻿using HospitalCare.Application.Common.Interfaces;
+﻿using System.Data;
+using HospitalCare.Application.Common.Interfaces;
 using HospitalCare.Domain.Entities;
 using HospitalCare.Infrastructure.Persistence.DbInitializer;
 using HospitalCare.Infrastructure.Repositories;
+using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 
 namespace HospitalCare.Infrastructure.Persistence
 {
     public sealed class UnitOfWork : IUnitOfWork
     {
+        private const int MaximumTransactionAttempts = 3;
         private readonly ApplicationDbContext _context;
 
         private readonly Lazy<IGenericRepository<Department>> _departments;
@@ -68,6 +72,57 @@ namespace HospitalCare.Infrastructure.Persistence
             CancellationToken cancellationToken = default)
         {
             return _context.SaveChangesAsync(cancellationToken);
+        }
+        // Serializable locks and the unique index protect allocation; retry deadlocks and uniqueness races.
+        public async Task<TResult> ExecuteSerializableTransactionAsync<TResult>(
+            Func<CancellationToken, Task<TResult>> operation,
+            CancellationToken cancellationToken = default)
+        {
+            for (var attempt = 1; attempt <= MaximumTransactionAttempts; attempt++)
+            {
+                await using var transaction =
+                    await _context.Database.BeginTransactionAsync(
+                        IsolationLevel.Serializable,
+                        cancellationToken);
+
+                try
+                {
+                    var result = await operation(cancellationToken);
+                    await transaction.CommitAsync(cancellationToken);
+                    return result;
+                }
+                catch (Exception exception) when (
+                    attempt < MaximumTransactionAttempts &&
+                    IsRetryableSqlException(exception))
+                {
+                    await transaction.RollbackAsync(CancellationToken.None);
+                    _context.ChangeTracker.Clear();
+                    await Task.Delay(
+                        TimeSpan.FromMilliseconds(50 * attempt),
+                        cancellationToken);
+                }
+            }
+
+            throw new InvalidOperationException(
+                "The serializable transaction did not complete.");
+        }
+
+        private static bool IsRetryableSqlException(Exception exception)
+        {
+            for (var current = exception;
+                 current is not null;
+                 current = current.InnerException)
+            {
+                if (current is SqlException sqlException &&
+                    sqlException.Errors
+                        .Cast<SqlError>()
+                        .Any(error => error.Number is 1205 or 2601 or 2627))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }

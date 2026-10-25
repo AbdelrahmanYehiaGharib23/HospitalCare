@@ -1,5 +1,8 @@
 using HospitalCare.Application.Common.Constants;
+using HospitalCare.Application.Common.Models;
 using HospitalCare.Application.Features.Appointments.Commands;
+using HospitalCare.Application.Features.Appointments.DTOs;
+using HospitalCare.Application.Features.Appointments.Queries;
 using HospitalCare.Application.Features.Payments.DTOs;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -26,6 +29,44 @@ public sealed class AppointmentsController : ControllerBase
             CancellationToken cancellationToken)
     {
         var result = await _sender.Send(command, cancellationToken);
+        return Ok(result);
+    }
+
+    [HttpPost("{id:int}/cancel")]
+    [Authorize(
+        Roles = Roles.Patient + "," + Roles.Receptionist + "," + Roles.Admin)]
+    public async Task<ActionResult<CancelledAppointmentDto>> CancelAppointment(
+        int id,
+        CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(
+            new CancelAppointmentCommand(id),
+            cancellationToken);
+
+        return Ok(result);
+    }
+
+    [HttpGet("me")]
+    [Authorize(Roles = Roles.Patient)]
+    public async Task<ActionResult<PagedResult<PatientAppointmentDto>>>
+        GetMyAppointments(
+            [FromQuery] GetPatientAppointmentsQuery query,
+            CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(query, cancellationToken);
+        return Ok(result);
+    }
+
+    [HttpGet("{id:int}")]
+    [Authorize(Roles = Roles.Patient)]
+    public async Task<ActionResult<PatientAppointmentDto>> GetAppointmentById(
+        int id,
+        CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(
+            new GetAppointmentByIdQuery(id),
+            cancellationToken);
+
         return Ok(result);
     }
 }

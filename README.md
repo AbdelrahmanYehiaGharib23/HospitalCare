@@ -45,6 +45,8 @@ dotnet user-secrets set "PaymentGateway:Fake:WebhookSecret" "REPLACE_WITH_A_RAND
 
 The equivalent environment variable is `PaymentGateway__Fake__WebhookSecret`. The Fake provider returns a non-routable checkout URL and accepts signed test callbacks at `POST /api/payments/webhook`; it does not contact a payment service.
 
+The webhook reads a raw UTF-8 JSON body with `gatewayReference`, `status` (`Succeeded` or `Failed`), `amount`, and `currency` (`EGP`). Send `X-Payment-Signature` as the hexadecimal HMAC-SHA256 of the exact request body using the configured secret. A successful callback creates the queued Appointment if capacity remains; otherwise the Fake refund completes locally.
+
 Doctor schedules use local wall-clock time. Availability calculations use `Hospital:TimeZoneId`, which defaults to `Africa/Cairo`; the environment variable name is `Hospital__TimeZoneId`.
 
 ## Database

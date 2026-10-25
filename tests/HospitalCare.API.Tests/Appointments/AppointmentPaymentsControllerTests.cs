@@ -1,9 +1,12 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Security.Cryptography;
+using System.Text;
 using HospitalCare.API.Tests.Infrastructure;
 using HospitalCare.Application.Authentication;
 using HospitalCare.Application.Common.Models;
+using HospitalCare.Application.Features.Appointments.DTOs;
 using HospitalCare.Application.Features.Payments.DTOs;
 using HospitalCare.Domain.Entities;
 using HospitalCare.Domain.Enums;
@@ -16,14 +19,17 @@ namespace HospitalCare.API.Tests.Appointments;
 public sealed class AppointmentPaymentsControllerTests
 {
     [Fact]
-    public async Task InitiatePayment_PatientWithAvailableCapacity_ReturnsCheckout()
+    public async Task InitiatePayment_ThenConfirmedWebhook_CreatesQueuedAppointment()
     {
         using var factory = new HospitalCareApiFactory();
         using var client = factory.CreateClient();
         var cancellationToken = TestContext.Current.CancellationToken;
         const string email = "payment-patient@example.com";
         var token = await RegisterPatientAsync(client, email);
-        var booking = await SeedBookingDataAsync(factory, email);
+        var booking = await SeedBookingDataAsync(
+            factory,
+            email,
+            cancelledQueuePosition: 4);
         client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", token);
 
@@ -56,7 +62,238 @@ public sealed class AppointmentPaymentsControllerTests
         Assert.Equal(PaymentStatus.Pending, payment.Status);
         Assert.Equal($"fake-{payment.Id}", payment.GatewayReference);
         Assert.Equal(booking.PatientId, payment.PatientId);
-        Assert.Empty(await dbContext.Appointments.ToListAsync(cancellationToken));
+        var appointmentsBeforeConfirmation = await dbContext.Appointments
+            .ToListAsync(cancellationToken);
+        var existingAppointment = Assert.Single(appointmentsBeforeConfirmation);
+        Assert.Equal(
+            AppointmentStatus.Cancelled,
+            existingAppointment.Status);
+
+        using var webhookResponse = await SendWebhookAsync(
+            client,
+            payment.GatewayReference!,
+            payment.Amount,
+            "Succeeded");
+        Assert.Equal(HttpStatusCode.OK, webhookResponse.StatusCode);
+        var webhookResult = await webhookResponse.Content
+            .ReadFromJsonAsync<PaymentWebhookResultDto>(cancellationToken);
+        Assert.NotNull(webhookResult);
+        Assert.Equal(PaymentStatus.Succeeded, webhookResult.Status);
+        Assert.Equal(5, webhookResult.QueuePosition);
+
+        using var duplicateResponse = await SendWebhookAsync(
+            client,
+            payment.GatewayReference!,
+            payment.Amount,
+            "Succeeded");
+        Assert.Equal(HttpStatusCode.OK, duplicateResponse.StatusCode);
+        var duplicateResult = await duplicateResponse.Content
+            .ReadFromJsonAsync<PaymentWebhookResultDto>(cancellationToken);
+        Assert.NotNull(duplicateResult);
+        Assert.Equal(webhookResult.AppointmentId, duplicateResult.AppointmentId);
+
+        Assert.Equal(
+            2,
+            await dbContext.Appointments.CountAsync(cancellationToken));
+
+        using var myAppointmentsResponse = await client.GetAsync(
+            "/api/appointments/me?pageNumber=1&pageSize=10",
+            cancellationToken);
+        Assert.Equal(HttpStatusCode.OK, myAppointmentsResponse.StatusCode);
+        var myAppointments = await myAppointmentsResponse.Content
+            .ReadFromJsonAsync<PagedResult<PatientAppointmentDto>>(
+                cancellationToken);
+        Assert.NotNull(myAppointments);
+        Assert.Equal(2, myAppointments.TotalCount);
+        var myAppointment = Assert.Single(
+            myAppointments.Items,
+            item => item.Id == webhookResult.AppointmentId);
+        Assert.Equal(1, myAppointment.QueuePosition);
+
+        using var appointmentResponse = await client.GetAsync(
+            $"/api/appointments/{webhookResult.AppointmentId}",
+            cancellationToken);
+        Assert.Equal(HttpStatusCode.OK, appointmentResponse.StatusCode);
+        var appointment = await appointmentResponse.Content
+            .ReadFromJsonAsync<PatientAppointmentDto>(cancellationToken);
+        Assert.NotNull(appointment);
+        Assert.Equal(myAppointment.Id, appointment.Id);
+        Assert.Equal(1, appointment.QueuePosition);
+
+        using var otherPatientClient = factory.CreateClient();
+        var otherPatientToken = await RegisterPatientAsync(
+            otherPatientClient,
+            "other-payment-patient@example.com");
+        otherPatientClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", otherPatientToken);
+        using var otherPatientResponse = await otherPatientClient.GetAsync(
+            $"/api/appointments/{webhookResult.AppointmentId}",
+            cancellationToken);
+        Assert.Equal(HttpStatusCode.Forbidden, otherPatientResponse.StatusCode);
+        using var otherPatientCancelResponse = await otherPatientClient.PostAsync(
+            $"/api/appointments/{webhookResult.AppointmentId}/cancel",
+            null,
+            cancellationToken);
+        Assert.Equal(
+            HttpStatusCode.Forbidden,
+            otherPatientCancelResponse.StatusCode);
+
+        using var cancelResponse = await client.PostAsync(
+            $"/api/appointments/{webhookResult.AppointmentId}/cancel",
+            null,
+            cancellationToken);
+        Assert.Equal(HttpStatusCode.OK, cancelResponse.StatusCode);
+        var cancelledAppointment = await cancelResponse.Content
+            .ReadFromJsonAsync<CancelledAppointmentDto>(cancellationToken);
+        Assert.NotNull(cancelledAppointment);
+        Assert.Equal(AppointmentStatus.Cancelled, cancelledAppointment.Status);
+        Assert.Equal(PaymentStatus.Refunded, cancelledAppointment.PaymentStatus);
+
+        using var duplicateCancelResponse = await client.PostAsync(
+            $"/api/appointments/{webhookResult.AppointmentId}/cancel",
+            null,
+            cancellationToken);
+        Assert.Equal(HttpStatusCode.OK, duplicateCancelResponse.StatusCode);
+
+        using var cancelledListResponse = await client.GetAsync(
+            "/api/appointments/me",
+            cancellationToken);
+        var cancelledAppointments = await cancelledListResponse.Content
+            .ReadFromJsonAsync<PagedResult<PatientAppointmentDto>>(
+                cancellationToken);
+        Assert.NotNull(cancelledAppointments);
+        Assert.All(
+            cancelledAppointments.Items,
+            item => Assert.Null(item.QueuePosition));
+    }
+
+    [Fact]
+    public async Task HandleWebhook_InvalidSignature_ReturnsBadRequest()
+    {
+        using var factory = new HospitalCareApiFactory();
+        using var client = factory.CreateClient();
+        const string payload = "{\"gatewayReference\":\"fake-1\",\"status\":\"Succeeded\",\"amount\":100,\"currency\":\"EGP\"}";
+        using var request = new HttpRequestMessage(
+            HttpMethod.Post,
+            "/api/payments/webhook")
+        {
+            Content = new StringContent(
+                payload,
+                Encoding.UTF8,
+                "application/json")
+        };
+        request.Headers.Add("X-Payment-Signature", "00");
+
+        using var response = await client.SendAsync(
+            request,
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task ConfirmPayment_FailedGatewayEvent_DoesNotCreateAppointment()
+    {
+        using var factory = new HospitalCareApiFactory();
+        using var client = factory.CreateClient();
+        const string email = "failed-payment-patient@example.com";
+        var token = await RegisterPatientAsync(client, email);
+        var booking = await SeedBookingDataAsync(factory, email);
+        client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", token);
+        using var checkoutResponse = await client.PostAsJsonAsync(
+            "/api/appointments/payments",
+            new
+            {
+                booking.DoctorId,
+                booking.AppointmentTypeId,
+                RequestedDate = booking.Date
+            },
+            TestContext.Current.CancellationToken);
+        var checkout = await checkoutResponse.Content
+            .ReadFromJsonAsync<InitiatedAppointmentPaymentDto>(
+                TestContext.Current.CancellationToken);
+        Assert.NotNull(checkout);
+
+        using var webhookResponse = await SendWebhookAsync(
+            client,
+            $"fake-{checkout.PaymentTransactionId}",
+            checkout.Amount,
+            "Failed");
+        Assert.Equal(HttpStatusCode.OK, webhookResponse.StatusCode);
+        var result = await webhookResponse.Content
+            .ReadFromJsonAsync<PaymentWebhookResultDto>(
+                TestContext.Current.CancellationToken);
+        Assert.NotNull(result);
+        Assert.Equal(PaymentStatus.Failed, result.Status);
+        Assert.Equal(0, await CountAppointmentsAsync(
+            factory,
+            TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task ConfirmPayment_CapacityFilledAfterCheckout_RefundsPayment()
+    {
+        using var factory = new HospitalCareApiFactory();
+        using var client = factory.CreateClient();
+        var cancellationToken = TestContext.Current.CancellationToken;
+        const string email = "capacity-race-patient@example.com";
+        var token = await RegisterPatientAsync(client, email);
+        var booking = await SeedBookingDataAsync(factory, email);
+        client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", token);
+
+        using var checkoutResponse = await client.PostAsJsonAsync(
+            "/api/appointments/payments",
+            new
+            {
+                booking.DoctorId,
+                booking.AppointmentTypeId,
+                RequestedDate = booking.Date
+            },
+            cancellationToken);
+        Assert.Equal(HttpStatusCode.OK, checkoutResponse.StatusCode);
+        var checkout = await checkoutResponse.Content
+            .ReadFromJsonAsync<InitiatedAppointmentPaymentDto>(cancellationToken);
+        Assert.NotNull(checkout);
+
+        using (var scope = factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider
+                .GetRequiredService<ApplicationDbContext>();
+            dbContext.Appointments.AddRange(
+                CreateAppointment(booking, 1),
+                CreateAppointment(booking, 2));
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+
+        using var webhookResponse = await SendWebhookAsync(
+            client,
+            $"fake-{checkout.PaymentTransactionId}",
+            checkout.Amount,
+            "Succeeded");
+        Assert.Equal(HttpStatusCode.OK, webhookResponse.StatusCode);
+        var webhookResult = await webhookResponse.Content
+            .ReadFromJsonAsync<PaymentWebhookResultDto>(cancellationToken);
+        Assert.NotNull(webhookResult);
+        Assert.Equal(PaymentStatus.Refunded, webhookResult.Status);
+        Assert.Null(webhookResult.AppointmentId);
+
+        using var duplicateResponse = await SendWebhookAsync(
+            client,
+            $"fake-{checkout.PaymentTransactionId}",
+            checkout.Amount,
+            "Succeeded");
+        Assert.Equal(HttpStatusCode.OK, duplicateResponse.StatusCode);
+        Assert.Equal(
+            2,
+            await CountAppointmentsAsync(factory, cancellationToken));
+        Assert.Equal(
+            PaymentStatus.Refunded,
+            await GetPaymentStatusAsync(
+                factory,
+                checkout.PaymentTransactionId,
+                cancellationToken));
     }
 
     [Fact]
@@ -81,7 +318,8 @@ public sealed class AppointmentPaymentsControllerTests
     private static async Task<(int DoctorId, int AppointmentTypeId, int PatientId, DateOnly Date)>
         SeedBookingDataAsync(
             HospitalCareApiFactory factory,
-            string patientEmail)
+            string patientEmail,
+            int? cancelledQueuePosition = null)
     {
         using var scope = factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider
@@ -123,6 +361,21 @@ public sealed class AppointmentPaymentsControllerTests
         dbContext.AddRange(doctor, appointmentType);
         await dbContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
+        if (cancelledQueuePosition.HasValue)
+        {
+            dbContext.Appointments.Add(new Appointment
+            {
+                DoctorId = doctor.Id,
+                AppointmentTypeId = appointmentType.Id,
+                PatientId = patient.Id,
+                AppointmentDate = date,
+                QueuePosition = cancelledQueuePosition.Value,
+                Status = AppointmentStatus.Cancelled
+            });
+            await dbContext.SaveChangesAsync(
+                TestContext.Current.CancellationToken);
+        }
+
         return (doctor.Id, appointmentType.Id, patient.Id, date);
     }
 
@@ -146,5 +399,71 @@ public sealed class AppointmentPaymentsControllerTests
                 TestContext.Current.CancellationToken);
         Assert.NotNull(token);
         return token.Token;
+    }
+
+    private static Appointment CreateAppointment(
+        (int DoctorId, int AppointmentTypeId, int PatientId, DateOnly Date) booking,
+        int queuePosition)
+    {
+        return new Appointment
+        {
+            DoctorId = booking.DoctorId,
+            AppointmentTypeId = booking.AppointmentTypeId,
+            PatientId = booking.PatientId,
+            AppointmentDate = booking.Date,
+            QueuePosition = queuePosition
+        };
+    }
+
+    private static async Task<HttpResponseMessage> SendWebhookAsync(
+        HttpClient client,
+        string gatewayReference,
+        decimal amount,
+        string status)
+    {
+        var payload =
+            $"{{\"gatewayReference\":\"{gatewayReference}\",\"status\":\"{status}\",\"amount\":{amount},\"currency\":\"EGP\"}}";
+        var key = Encoding.UTF8.GetBytes(
+            "HospitalCare integration test webhook signing secret");
+        var signature = Convert.ToHexString(
+            HMACSHA256.HashData(key, Encoding.UTF8.GetBytes(payload)));
+        using var request = new HttpRequestMessage(
+            HttpMethod.Post,
+            "/api/payments/webhook")
+        {
+            Content = new StringContent(
+                payload,
+                Encoding.UTF8,
+                "application/json")
+        };
+        request.Headers.Add("X-Payment-Signature", signature);
+        return await client.SendAsync(
+            request,
+            TestContext.Current.CancellationToken);
+    }
+
+    private static async Task<int> CountAppointmentsAsync(
+        HospitalCareApiFactory factory,
+        CancellationToken cancellationToken)
+    {
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider
+            .GetRequiredService<ApplicationDbContext>();
+        return await dbContext.Appointments.CountAsync(cancellationToken);
+    }
+
+    private static async Task<PaymentStatus> GetPaymentStatusAsync(
+        HospitalCareApiFactory factory,
+        int paymentTransactionId,
+        CancellationToken cancellationToken)
+    {
+        using var scope = factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider
+            .GetRequiredService<ApplicationDbContext>();
+        return (await dbContext.PaymentTransactions
+                .SingleAsync(
+                    payment => payment.Id == paymentTransactionId,
+                    cancellationToken))
+            .Status;
     }
 }

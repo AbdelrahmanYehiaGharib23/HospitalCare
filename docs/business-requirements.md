@@ -46,7 +46,7 @@ Appointment     (1) ── (1) PaymentTransaction
 - `Id`, `Name` (e.g. "Consultation", "Follow-up"), `DurationMinutes`, `BookingFee` (`decimal(18,2)`, EGP)
 
 **PaymentTransaction** *(new)*
-- `Id`, `PatientId`, `DoctorId`, `AppointmentTypeId`, `RequestedDate`, `Amount`, `Status` (`Pending` / `Succeeded` / `Failed` / `Refunded`), `GatewayReference`, `CreatedAt`
+- `Id`, `PatientId`, `DoctorId`, `AppointmentTypeId`, `RequestedDate`, `Amount`, `Status` (`Pending` / `Succeeded` / `Failed` / `RefundPending` / `Refunded`), `GatewayReference`, `CreatedAt`
 
 **Appointment** *(extended)*
 - `Id`, `DoctorId`, `PatientId`, `AppointmentTypeId`, `PaymentTransactionId`
@@ -190,3 +190,6 @@ Appointment     (1) ── (1) PaymentTransaction
 - `QueuePosition` is assigned as the next value after the highest position for that Doctor and date, including cancelled appointments; a Patient sees their rank among `Queued` and `InProgress` appointments.
 - The configured payment provider is selected through `IPaymentGateway`; only the internal Fake provider is implemented until an external provider is explicitly approved.
 - Available-date queries accept an inclusive range of at most 90 calendar days.
+- A Doctor with `PendingDeactivation` accepts no new bookings, allowing the existing queue to drain.
+- `QueuePosition` is the next value after the highest value for the Doctor and date, including cancelled appointments; a Patient sees their rank among `Queued` and `InProgress` appointments.
+- `RefundPending` records a confirmed payment that requires a refund; the payment transaction ID is the gateway refund idempotency key.

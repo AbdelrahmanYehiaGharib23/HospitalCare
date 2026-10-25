@@ -42,7 +42,9 @@ namespace HospitalCare.Infrastructure.Persistence.Configurations
                 .HasForeignKey(x => x.AppointmentTypeId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            builder.HasIndex(x => x.GatewayReference);
+            builder.HasIndex(x => x.GatewayReference)
+                .IsUnique()
+                .HasFilter("[GatewayReference] IS NOT NULL");
         }
     }
 }

@@ -71,7 +71,8 @@ namespace HospitalCare.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("PatientId", "AppointmentDate");
 
-                    b.HasIndex("DoctorId", "AppointmentDate", "QueuePosition");
+                    b.HasIndex("DoctorId", "AppointmentDate", "QueuePosition")
+                        .IsUnique();
 
                     b.ToTable("Appointments", null, t =>
                         {
@@ -289,7 +290,9 @@ namespace HospitalCare.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("DoctorId");
 
-                    b.HasIndex("GatewayReference");
+                    b.HasIndex("GatewayReference")
+                        .IsUnique()
+                        .HasFilter("[GatewayReference] IS NOT NULL");
 
                     b.HasIndex("PatientId");
 

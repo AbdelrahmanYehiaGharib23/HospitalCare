@@ -35,5 +35,17 @@ namespace HospitalCare.Domain.Entities
         public AppointmentType AppointmentType { get; set; } = null!;
 
         public PaymentTransaction? PaymentTransaction { get; set; }
+
+        public void Cancel()
+        {
+            if (Status is not AppointmentStatus.Queued and
+                not AppointmentStatus.InProgress)
+            {
+                throw new InvalidOperationException(
+                    "Only queued or in-progress appointments can be cancelled.");
+            }
+
+            Status = AppointmentStatus.Cancelled;
+        }
     }
 }

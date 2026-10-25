@@ -21,6 +21,10 @@ namespace HospitalCare.Application.Common.Interfaces
 
         Task<int> SaveChangesAsync(
             CancellationToken cancellationToken = default);
+
+        Task<TResult> ExecuteSerializableTransactionAsync<TResult>(
+            Func<CancellationToken, Task<TResult>> operation,
+            CancellationToken cancellationToken = default);
     }
 }
 

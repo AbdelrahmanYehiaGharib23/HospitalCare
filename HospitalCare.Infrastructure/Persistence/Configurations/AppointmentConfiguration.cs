@@ -55,7 +55,7 @@ namespace HospitalCare.Infrastructure.Persistence.Configurations
                 x.DoctorId,
                 x.AppointmentDate,
                 x.QueuePosition
-            });
+            }).IsUnique();
 
             builder.HasIndex(x => new
             {
