@@ -192,6 +192,28 @@ public sealed class AppointmentPaymentsControllerTests
     }
 
     [Fact]
+    public async Task HandlePaymobWebhook_InvalidSignature_ReturnsBadRequest()
+    {
+        using var factory = new HospitalCareApiFactory();
+        using var client = factory.CreateClient();
+        const string payload = "{\"gatewayReference\":\"fake-1\",\"status\":\"Succeeded\",\"amount\":100,\"currency\":\"EGP\"}";
+        using var request = new HttpRequestMessage(
+            HttpMethod.Post,
+            "/api/payments/paymob/webhook?hmac=00")
+        {
+            Content = new StringContent(
+                payload,
+                Encoding.UTF8,
+                "application/json")
+        };
+        using var response = await client.SendAsync(
+            request,
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
     public async Task ConfirmPayment_FailedGatewayEvent_DoesNotCreateAppointment()
     {
         using var factory = new HospitalCareApiFactory();

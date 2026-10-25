@@ -19,6 +19,7 @@ public sealed class PaymentsController : ControllerBase
     }
 
     [HttpPost("webhook")]
+    [HttpPost("paymob/webhook")]
     [AllowAnonymous]
     [Consumes("application/json")]
     public async Task<ActionResult<PaymentWebhookResultDto>> HandleWebhook(

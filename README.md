@@ -55,7 +55,7 @@ dotnet user-secrets set "Paymob:SecretKey" "PAYMOB_SECRET_KEY" --project Hospita
 dotnet user-secrets set "Paymob:PublicKey" "PAYMOB_PUBLIC_KEY" --project HospitalCare.API
 dotnet user-secrets set "Paymob:HmacSecret" "PAYMOB_HMAC_SECRET" --project HospitalCare.API
 dotnet user-secrets set "Paymob:IntegrationId" "PAYMOB_INTEGRATION_ID" --project HospitalCare.API
-dotnet user-secrets set "Paymob:NotificationUrl" "https://YOUR_PUBLIC_HOST/api/payments/webhook" --project HospitalCare.API
+dotnet user-secrets set "Paymob:NotificationUrl" "https://YOUR_PUBLIC_HOST/api/payments/paymob/webhook" --project HospitalCare.API
 dotnet user-secrets set "Paymob:Currency" "EGP" --project HospitalCare.API
 dotnet user-secrets set "Paymob:RedirectUrl" "https://YOUR_FRONTEND_HOST/payment/complete" --project HospitalCare.API
 ```
@@ -122,7 +122,7 @@ All routes are under `/api`. Requests that require authentication use a JWT bear
 | `POST /appointments/{id}/start`, `POST /appointments/{id}/complete` | Doctor | Start or complete an appointment in the Doctor's own queue. |
 | `GET /patients/me`, `PUT /patients/me`, `GET /patients/me/medical-history` | Patient | Read or update the Patient's own profile and medical history. |
 | `GET /patients/{id}/medical-history` | Doctor, Receptionist | Read a Patient's history; Doctors need an appointment record with that Patient. |
-| `POST /payments/webhook` | Anonymous, signed callback | Verify the internal Fake callback or Paymob transaction callback. |
+| `POST /payments/webhook`, `POST /payments/paymob/webhook` | Anonymous, signed callback | Verify the internal Fake callback or Paymob transaction callback. |
 
 ## Booking and queue behavior
 
