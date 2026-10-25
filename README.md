@@ -2,6 +2,8 @@
 
 HospitalCare is a REST API for hospital appointment management.
 
+For a beginner-friendly walkthrough in Arabic, see [the project guide](docs/project-guide-ar.md).
+
 ## Stack
 
 - .NET 10 and ASP.NET Core
