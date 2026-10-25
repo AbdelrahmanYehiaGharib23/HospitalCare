@@ -5,6 +5,7 @@ using HospitalCare.Infrastructure.Identity;
 using HospitalCare.Infrastructure.Authentication;
 using HospitalCare.Infrastructure.Persistence;
 using HospitalCare.Infrastructure.Persistence.DbInitializer;
+using HospitalCare.Infrastructure.Payments;
 using HospitalCare.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -30,6 +31,20 @@ namespace HospitalCare.Infrastructure
             services.AddScoped<AppointmentTypeSeeder>();
             services.AddSingleton<TimeProvider>(TimeProvider.System);
             services.AddSingleton<DoctorCapacityCalculator>();
+
+            var paymentProvider = configuration["PaymentGateway:Provider"];
+            if (!string.Equals(
+                    paymentProvider,
+                    "Fake",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException(
+                    "PaymentGateway:Provider must be configured as Fake.");
+            }
+
+            services.Configure<FakePaymentGatewayOptions>(
+                configuration.GetSection(FakePaymentGatewayOptions.SectionName));
+            services.AddSingleton<IPaymentGateway, FakePaymentGateway>();
 
             var timeZoneId = configuration["Hospital:TimeZoneId"];
             var hospitalTimeZone = TimeZoneInfo.FindSystemTimeZoneById(

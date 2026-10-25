@@ -181,3 +181,10 @@ Appointment     (1) ── (1) PaymentTransaction
 - Whether the 5-minute no-show grace period is configurable per doctor or fixed system-wide
 - Receptionist's exact write-access boundaries beyond what's listed in section 7
 - Optional safety margin: whether to cap bookings below 100% of working time (e.g. 90%) to absorb overruns
+
+## 10. Decisions Applied
+
+- A Doctor with `PendingDeactivation` accepts no new bookings while remaining active until the queue drains.
+- `BookingFee` is stored per `AppointmentType` in EGP.
+- `QueuePosition` is assigned as the next value after the highest position for that Doctor and date, including cancelled appointments; a Patient sees their rank among `Queued` and `InProgress` appointments.
+- The configured payment provider is selected through `IPaymentGateway`; only the internal Fake provider is implemented until an external provider is explicitly approved.

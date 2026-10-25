@@ -34,6 +34,9 @@ internal sealed class HospitalCareApiFactory : WebApplicationFactory<Program>
         SetEnvironmentValue("Jwt__Issuer", "HospitalCare.API.Tests");
         SetEnvironmentValue("Jwt__Audience", "HospitalCare.API.Tests");
         SetEnvironmentValue(
+            "PaymentGateway__Fake__WebhookSecret",
+            "HospitalCare integration test webhook signing secret");
+        SetEnvironmentValue(
             "Serilog__FilePath",
             Path.Combine(LogDirectory, "hospitalcare-.log"));
         _connection.Open();

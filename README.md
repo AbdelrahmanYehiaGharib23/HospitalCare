@@ -37,6 +37,14 @@ dotnet user-secrets set "Jwt:SecretKey" "REPLACE_WITH_A_RANDOM_SECRET_OF_AT_LEAS
 
 Replace the example value before running the command. `Jwt:Issuer` and `Jwt:Audience` have development values in `HospitalCare.API/appsettings.json`. User secrets are stored outside the repository. Environment variables can also be used with the names `ConnectionStrings__DefaultConnection` and `Jwt__SecretKey`.
 
+The payment provider is selected with `PaymentGateway:Provider`; the checked-in value uses the internal Fake provider. Store its webhook signing secret outside the repository:
+
+```powershell
+dotnet user-secrets set "PaymentGateway:Fake:WebhookSecret" "REPLACE_WITH_A_RANDOM_SECRET_OF_AT_LEAST_32_UTF8_BYTES" --project HospitalCare.API
+```
+
+The equivalent environment variable is `PaymentGateway__Fake__WebhookSecret`. The Fake provider returns a non-routable checkout URL and accepts signed test callbacks at `POST /api/payments/webhook`; it does not contact a payment service.
+
 Doctor schedules use local wall-clock time. Availability calculations use `Hospital:TimeZoneId`, which defaults to `Africa/Cairo`; the environment variable name is `Hospital__TimeZoneId`.
 
 ## Database
