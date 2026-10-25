@@ -110,7 +110,7 @@ public sealed class AppointmentTypesControllerTests
     }
 
     [Fact]
-    public async Task GetAppointmentTypes_PatientRequest_ReturnsForbidden()
+    public async Task GetAppointmentTypes_PatientRequest_ReturnsAvailableTypes()
     {
         using var factory = new HospitalCareApiFactory();
         using var client = factory.CreateClient();
@@ -122,7 +122,21 @@ public sealed class AppointmentTypesControllerTests
             "/api/appointment-types",
             TestContext.Current.CancellationToken);
 
-        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var result = await response.Content
+            .ReadFromJsonAsync<PagedResult<AppointmentTypeDto>>(
+                TestContext.Current.CancellationToken);
+
+        Assert.NotNull(result);
+        Assert.Equal(2, result.TotalCount);
+        Assert.Contains(result.Items, item =>
+            item.Name == "Consultation" &&
+            item.DurationMinutes == 30 &&
+            item.BookingFee == 100m);
+        Assert.Contains(result.Items, item =>
+            item.Name == "Follow-up" &&
+            item.DurationMinutes == 15 &&
+            item.BookingFee == 50m);
     }
 
     [Fact]

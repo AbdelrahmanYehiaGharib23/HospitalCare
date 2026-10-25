@@ -164,7 +164,8 @@ public sealed class AuthorizationMatrixTests
                 HttpMethod.Get,
                 "/api/appointment-types",
                 null,
-                Roles.Admin),
+                Roles.Admin,
+                Roles.Patient),
             new(
                 HttpMethod.Post,
                 "/api/appointment-types",

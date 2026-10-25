@@ -113,7 +113,8 @@ All routes are under `/api`. Requests that require authentication use a JWT bear
 | `POST /doctors/me/queue/call-next` | Doctor | Call the next checked-in Patient in the Doctor's queue for today. |
 | `POST /doctors/{id}/queue/call-next` | Receptionist | Call the next checked-in Patient for a Doctor today. |
 | `PUT /doctors/me/schedule` | Doctor | Replace the current Doctor's weekly schedule. |
-| `GET /appointment-types`, `POST /appointment-types`, `PUT /appointment-types/{id}` | Admin | List, create, or update appointment types and booking fees. |
+| `GET /appointment-types` | Admin, Patient | List appointment types and booking fees for browsing or booking. |
+| `POST /appointment-types`, `PUT /appointment-types/{id}` | Admin | Create or update appointment types and booking fees. |
 | `POST /receptionists` | Admin | Create a Receptionist account. |
 | `POST /appointments/payments` | Patient | Start payment for an appointment booking. |
 | `GET /appointments/me`, `GET /appointments/{id}` | Patient | Read the Patient's own appointments and queue rank. |

@@ -12,7 +12,6 @@ namespace HospitalCare.API.Controllers;
 
 [ApiController]
 [Route("api/appointment-types")]
-[Authorize(Roles = Roles.Admin)]
 public sealed class AppointmentTypesController : ControllerBase
 {
     private readonly ISender _sender;
@@ -23,6 +22,7 @@ public sealed class AppointmentTypesController : ControllerBase
     }
 
     [HttpGet]
+    [Authorize(Roles = Roles.Admin + "," + Roles.Patient)]
     public async Task<ActionResult<PagedResult<AppointmentTypeDto>>> GetAppointmentTypes(
         [FromQuery] GetAppointmentTypesQuery query,
         CancellationToken cancellationToken)
@@ -32,6 +32,7 @@ public sealed class AppointmentTypesController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = Roles.Admin)]
     public async Task<ActionResult<AppointmentTypeDto>> CreateAppointmentType(
         [FromBody] CreateAppointmentTypeCommand command,
         CancellationToken cancellationToken)
@@ -41,6 +42,7 @@ public sealed class AppointmentTypesController : ControllerBase
     }
 
     [HttpPut("{id:int}")]
+    [Authorize(Roles = Roles.Admin)]
     public async Task<ActionResult<AppointmentTypeDto>> UpdateAppointmentType(
         int id,
         [FromBody] UpdateAppointmentTypeRequest request,

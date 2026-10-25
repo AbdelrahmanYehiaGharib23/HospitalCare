@@ -38,6 +38,11 @@ GET {{HospitalCare.API_HostAddress}}/api/doctors/{{DoctorId}}/available-dates?ap
 Accept: application/json
 Authorization: Bearer {{PatientToken}}
 
+### List appointment types
+GET {{HospitalCare.API_HostAddress}}/api/appointment-types
+Accept: application/json
+Authorization: Bearer {{PatientToken}}
+
 ### Start an appointment payment
 POST {{HospitalCare.API_HostAddress}}/api/appointments/payments
 Content-Type: application/json
