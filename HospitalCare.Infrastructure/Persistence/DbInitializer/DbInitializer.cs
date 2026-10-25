@@ -18,15 +18,18 @@ public class DbInitializer : IDbInitializer
 
     private readonly ApplicationDbContext _dbContext;
     private readonly RoleManager<IdentityRole> _roleManager;
+    private readonly AdminAccountSeeder _adminAccountSeeder;
     private readonly AppointmentTypeSeeder _appointmentTypeSeeder;
 
     public DbInitializer(
         ApplicationDbContext dbContext,
         RoleManager<IdentityRole> roleManager,
+        AdminAccountSeeder adminAccountSeeder,
         AppointmentTypeSeeder appointmentTypeSeeder)
     {
         _dbContext = dbContext;
         _roleManager = roleManager;
+        _adminAccountSeeder = adminAccountSeeder;
         _appointmentTypeSeeder = appointmentTypeSeeder;
     }
 
@@ -38,6 +41,7 @@ public class DbInitializer : IDbInitializer
         }
 
         SeedRolesAsync().GetAwaiter().GetResult();
+        _adminAccountSeeder.SeedAsync().GetAwaiter().GetResult();
         _appointmentTypeSeeder
             .SeedAsync(_dbContext)
             .GetAwaiter()

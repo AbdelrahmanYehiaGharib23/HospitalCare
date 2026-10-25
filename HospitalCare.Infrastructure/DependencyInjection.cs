@@ -25,7 +25,10 @@ namespace HospitalCare.Infrastructure
 
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<IDbInitializer, DbInitializer>();
+            services.AddScoped<AdminAccountSeeder>();
             services.AddScoped<AppointmentTypeSeeder>();
+            services.Configure<AdminAccountOptions>(
+                configuration.GetSection(AdminAccountOptions.SectionName));
 
             services.Configure<JwtOptions>(
            configuration.GetSection(JwtOptions.SectionName));

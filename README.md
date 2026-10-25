@@ -39,7 +39,18 @@ Replace the example value before running the command. `Jwt:Issuer` and `Jwt:Audi
 
 ## Database
 
-On startup, `DbInitializer` applies pending Entity Framework migrations and seeds the `Admin`, `Doctor`, `Receptionist`, and `Patient` roles. It does not create an Admin user.
+On startup, `DbInitializer` applies pending Entity Framework migrations and seeds the `Admin`, `Doctor`, `Receptionist`, and `Patient` roles.
+
+The first Admin account is seeded only when both `SeedAdmin:Email` and `SeedAdmin:Password` are configured. Store them in user secrets or environment variables:
+
+```powershell
+dotnet user-secrets set "SeedAdmin:Email" "admin@example.com" --project HospitalCare.API
+dotnet user-secrets set "SeedAdmin:Password" "REPLACE_WITH_A_STRONG_PASSWORD" --project HospitalCare.API
+```
+
+When neither value is configured, startup skips Admin account seeding. If only one value is configured, startup fails. If the configured email already belongs to an account without the Admin role, startup also fails rather than changing that account's permissions.
+
+The equivalent environment variable names are `SeedAdmin__Email` and `SeedAdmin__Password`.
 
 To apply migrations manually:
 
