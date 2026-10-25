@@ -54,4 +54,17 @@ public sealed class DepartmentsController : ControllerBase
 
         return Ok(result);
     }
+
+    [HttpPost("{id:int}/deactivate")]
+    [Authorize(Roles = Roles.Admin)]
+    public async Task<ActionResult<DepartmentDto>> DeactivateDepartment(
+        int id,
+        CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(
+            new DeactivateDepartmentCommand(id),
+            cancellationToken);
+
+        return Ok(result);
+    }
 }

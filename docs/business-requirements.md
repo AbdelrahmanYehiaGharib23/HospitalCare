@@ -142,6 +142,8 @@ Appointment     (1) ── (1) PaymentTransaction
 | Book Appointment | No | No | No | Yes (own) |
 | Cancel Appointment | Yes (any) | No | Yes (any) | Yes (own only) |
 | Start / Complete Appointment | No | Yes (own queue) | No | No |
+| Check in Patient | No | No | Yes | No |
+| Call next Patient | No | Yes (own queue) | Yes (any queue) | No |
 | View Doctor Queue | No | Yes (own) | Yes (all) | No |
 | View DoctorSchedule | Yes (any) | Yes (own) | No | Yes (active Doctors) |
 | Manage own DoctorSchedule | No | Yes | No | No |
@@ -193,3 +195,8 @@ Appointment     (1) ── (1) PaymentTransaction
 - A Doctor with `PendingDeactivation` accepts no new bookings, allowing the existing queue to drain.
 - `QueuePosition` is the next value after the highest value for the Doctor and date, including cancelled appointments; a Patient sees their rank among `Queued` and `InProgress` appointments.
 - `RefundPending` records a confirmed payment that requires a refund; the payment transaction ID is the gateway refund idempotency key.
+- A Department stays active with `PendingDeactivation` while any Doctor has queued or in-progress Appointments; each Doctor stops accepting bookings while its own queue drains.
+- A Patient is present only after Receptionist check-in. A Doctor or Receptionist calls the next checked-in Patient, starting the five-minute no-show window.
+- If the first missed call has no later queued Patient to swap with, it remains pending and `SkipCount` is unchanged until a next Patient exists.
+- The five-minute no-show window is fixed system-wide. Queue call actions apply to the hospital-local current date.
+- No-show swaps exchange positions between existing queue entries; new bookings still use max position plus one, including cancelled rows.

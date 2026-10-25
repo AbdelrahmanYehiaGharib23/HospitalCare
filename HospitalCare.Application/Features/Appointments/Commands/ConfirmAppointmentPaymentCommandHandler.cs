@@ -196,6 +196,18 @@ public sealed class ConfirmAppointmentPaymentCommandHandler
             return false;
         }
 
+        var departments = await _unitOfWork.Departments.FindAsync(
+            department => department.Id == doctor.DepartmentId,
+            withTracking: false,
+            cancellationToken);
+        var department = departments.SingleOrDefault();
+        if (department is null ||
+            !department.IsActive ||
+            department.PendingDeactivation)
+        {
+            return false;
+        }
+
         var appointmentTypes = await _unitOfWork.AppointmentTypes.FindAsync(
             appointmentType =>
                 appointmentType.Id == transaction.AppointmentTypeId,

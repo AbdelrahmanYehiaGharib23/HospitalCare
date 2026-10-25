@@ -32,6 +32,12 @@ public sealed class CreateDoctorCommandHandler
             throw new NotFoundException("Department was not found.");
         }
 
+        if (!department.IsActive || department.PendingDeactivation)
+        {
+            throw new ConflictException(
+                "The Department is not accepting new Doctors.");
+        }
+
         var doctor = await _identityService.CreateDoctorAsync(
             request.Name.Trim(),
             request.Email.Trim(),

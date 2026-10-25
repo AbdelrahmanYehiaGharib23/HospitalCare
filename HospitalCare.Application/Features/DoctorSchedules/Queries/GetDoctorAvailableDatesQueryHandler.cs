@@ -49,6 +49,21 @@ public sealed class GetDoctorAvailableDatesQueryHandler
             return [];
         }
 
+        var departments = await _unitOfWork.Departments.FindAsync(
+            department => department.Id == doctor.DepartmentId,
+            withTracking: false,
+            cancellationToken);
+        var department = departments.SingleOrDefault();
+        if (department is null || !department.IsActive)
+        {
+            throw new NotFoundException("Department was not found.");
+        }
+
+        if (department.PendingDeactivation)
+        {
+            return [];
+        }
+
         var appointmentTypes = await _unitOfWork.AppointmentTypes.FindAsync(
             appointmentType =>
                 appointmentType.Id == request.AppointmentTypeId,

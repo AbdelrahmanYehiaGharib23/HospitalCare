@@ -1,13 +1,15 @@
 using HospitalCare.Application.Common.Constants;
 using HospitalCare.Application.Common.Models;
+using HospitalCare.Application.Features.Appointments.DTOs;
+using HospitalCare.Application.Features.DoctorQueues.Commands;
+using HospitalCare.Application.Features.DoctorQueues.DTOs;
+using HospitalCare.Application.Features.DoctorQueues.Queries;
 using HospitalCare.Application.Features.Doctors.Commands;
 using HospitalCare.Application.Features.Doctors.DTOs;
 using HospitalCare.Application.Features.Doctors.Queries;
 using HospitalCare.Application.Features.DoctorSchedules.Commands;
 using HospitalCare.Application.Features.DoctorSchedules.DTOs;
 using HospitalCare.Application.Features.DoctorSchedules.Queries;
-using HospitalCare.Application.Features.DoctorQueues.DTOs;
-using HospitalCare.Application.Features.DoctorQueues.Queries;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -59,6 +61,19 @@ public sealed class DoctorsController : ControllerBase
         return Ok(result);
     }
 
+    [HttpPost("{id:int}/deactivate")]
+    [Authorize(Roles = Roles.Admin)]
+    public async Task<ActionResult<DoctorDto>> DeactivateDoctor(
+        int id,
+        CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(
+            new DeactivateDoctorCommand(id),
+            cancellationToken);
+
+        return Ok(result);
+    }
+
     [HttpGet("{id:int}/schedule")]
     [Authorize(Roles = Roles.Admin + "," + Roles.Doctor + "," + Roles.Patient)]
     public async Task<ActionResult<IReadOnlyList<DoctorScheduleDto>>> GetDoctorSchedule(
@@ -107,6 +122,33 @@ public sealed class DoctorsController : ControllerBase
                 date,
                 pageNumber,
                 pageSize),
+            cancellationToken);
+
+        return Ok(result);
+    }
+
+    [HttpPost("me/queue/call-next")]
+    [Authorize(Roles = Roles.Doctor)]
+    public async Task<ActionResult<AppointmentDto>> CallNextAppointment(
+        [FromQuery, BindRequired] DateOnly date,
+        CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(
+            new CallNextAppointmentCommand(null, date),
+            cancellationToken);
+
+        return Ok(result);
+    }
+
+    [HttpPost("{id:int}/queue/call-next")]
+    [Authorize(Roles = Roles.Receptionist)]
+    public async Task<ActionResult<AppointmentDto>> CallNextAppointmentForDoctor(
+        int id,
+        [FromQuery, BindRequired] DateOnly date,
+        CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(
+            new CallNextAppointmentCommand(id, date),
             cancellationToken);
 
         return Ok(result);

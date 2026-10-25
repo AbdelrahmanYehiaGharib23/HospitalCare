@@ -1,5 +1,6 @@
 ﻿using FluentValidation;
 using HospitalCare.Application.Common.Behaviors;
+using HospitalCare.Application.Common.Services;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace HospitalCare.Application
@@ -23,6 +24,7 @@ namespace HospitalCare.Application
 
             services.AddValidatorsFromAssembly(
                 typeof(DependencyInjection).Assembly);
+            services.AddScoped<DoctorDeactivationService>();
 
             return services;
         }

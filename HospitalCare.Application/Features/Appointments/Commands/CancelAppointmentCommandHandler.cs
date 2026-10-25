@@ -2,6 +2,7 @@ using HospitalCare.Application.Common.Constants;
 using HospitalCare.Application.Common.Exceptions;
 using HospitalCare.Application.Common.Interfaces;
 using HospitalCare.Application.Common.Models;
+using HospitalCare.Application.Common.Services;
 using HospitalCare.Application.Features.Appointments.DTOs;
 using HospitalCare.Domain.Entities;
 using HospitalCare.Domain.Enums;
@@ -17,15 +18,18 @@ public sealed class CancelAppointmentCommandHandler
     private readonly IUnitOfWork _unitOfWork;
     private readonly ICurrentUserService _currentUserService;
     private readonly IPaymentGateway _paymentGateway;
+    private readonly DoctorDeactivationService _doctorDeactivationService;
 
     public CancelAppointmentCommandHandler(
         IUnitOfWork unitOfWork,
         ICurrentUserService currentUserService,
-        IPaymentGateway paymentGateway)
+        IPaymentGateway paymentGateway,
+        DoctorDeactivationService doctorDeactivationService)
     {
         _unitOfWork = unitOfWork;
         _currentUserService = currentUserService;
         _paymentGateway = paymentGateway;
+        _doctorDeactivationService = doctorDeactivationService;
     }
 
     public async Task<CancelledAppointmentDto> Handle(
@@ -134,6 +138,10 @@ public sealed class CancelAppointmentCommandHandler
         }
 
         paymentTransaction.Status = PaymentStatus.RefundPending;
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        await _doctorDeactivationService.ApplyPendingDeactivationAsync(
+            appointment.DoctorId,
+            cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return new CancellationResult(

@@ -46,7 +46,8 @@ public sealed class DepartmentAdminControllerTests
             new DepartmentDto(
                 created.Id,
                 "Cardiology and Vascular",
-                true),
+                true,
+                false),
             updated);
 
         var patientToken = await RegisterPatientAsync(client);

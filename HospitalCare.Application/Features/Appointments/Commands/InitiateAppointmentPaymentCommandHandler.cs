@@ -74,6 +74,22 @@ public sealed class InitiateAppointmentPaymentCommandHandler
                 "The Doctor is not accepting new bookings.");
         }
 
+        var departments = await _unitOfWork.Departments.FindAsync(
+            department => department.Id == doctor.DepartmentId,
+            withTracking: false,
+            cancellationToken);
+        var department = departments.SingleOrDefault();
+        if (department is null || !department.IsActive)
+        {
+            throw new NotFoundException("Department was not found.");
+        }
+
+        if (department.PendingDeactivation)
+        {
+            throw new ConflictException(
+                "The Department is not accepting new bookings.");
+        }
+
         var appointmentTypes = await _unitOfWork.AppointmentTypes.FindAsync(
             appointmentType =>
                 appointmentType.Id == request.AppointmentTypeId,

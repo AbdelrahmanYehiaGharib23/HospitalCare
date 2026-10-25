@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
-
 namespace HospitalCare.Domain.Entities
 {
     public class Doctor : BaseEntity
@@ -23,5 +21,27 @@ namespace HospitalCare.Domain.Entities
 
         public ICollection<DoctorSchedule> Schedules { get; set; } =
             new List<DoctorSchedule>();
+
+        public void RequestDeactivation(bool hasActiveAppointments)
+        {
+            if (!IsActive)
+            {
+                return;
+            }
+
+            if (hasActiveAppointments)
+            {
+                PendingDeactivation = true;
+                return;
+            }
+
+            CompleteDeactivation();
+        }
+
+        public void CompleteDeactivation()
+        {
+            IsActive = false;
+            PendingDeactivation = false;
+        }
     }
 }

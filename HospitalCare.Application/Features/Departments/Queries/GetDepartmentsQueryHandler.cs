@@ -20,6 +20,7 @@ namespace HospitalCare.Application.Features.Departments.Queries
             CancellationToken cancellationToken)
         {
             var departments = await _unitOfWork.Departments.GetPageAsync(
+                department => department.IsActive,
                 request.PageNumber,
                 request.PageSize,
                 cancellationToken);

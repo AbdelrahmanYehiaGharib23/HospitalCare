@@ -1,3 +1,4 @@
+using HospitalCare.API.Contracts.Appointments;
 using HospitalCare.Application.Common.Constants;
 using HospitalCare.Application.Common.Models;
 using HospitalCare.Application.Features.Appointments.Commands;
@@ -41,6 +42,46 @@ public sealed class AppointmentsController : ControllerBase
     {
         var result = await _sender.Send(
             new CancelAppointmentCommand(id),
+            cancellationToken);
+
+        return Ok(result);
+    }
+
+    [HttpPost("{id:int}/check-in")]
+    [Authorize(Roles = Roles.Receptionist)]
+    public async Task<ActionResult<AppointmentDto>> CheckInAppointment(
+        int id,
+        CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(
+            new CheckInAppointmentCommand(id),
+            cancellationToken);
+
+        return Ok(result);
+    }
+
+    [HttpPost("{id:int}/start")]
+    [Authorize(Roles = Roles.Doctor)]
+    public async Task<ActionResult<AppointmentDto>> StartAppointment(
+        int id,
+        CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(
+            new StartAppointmentCommand(id),
+            cancellationToken);
+
+        return Ok(result);
+    }
+
+    [HttpPost("{id:int}/complete")]
+    [Authorize(Roles = Roles.Doctor)]
+    public async Task<ActionResult<AppointmentDto>> CompleteAppointment(
+        int id,
+        [FromBody] CompleteAppointmentRequest request,
+        CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(
+            new CompleteAppointmentCommand(id, request.Notes),
             cancellationToken);
 
         return Ok(result);

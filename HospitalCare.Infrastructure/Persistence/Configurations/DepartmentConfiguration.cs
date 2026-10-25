@@ -19,6 +19,9 @@ namespace HospitalCare.Infrastructure.Persistence.Configurations
             builder.Property(x => x.IsActive)
                 .HasDefaultValue(true);
 
+            builder.Property(x => x.PendingDeactivation)
+                .HasDefaultValue(false);
+
             builder.HasMany(x => x.Doctors)
                 .WithOne(x => x.Department)
                 .HasForeignKey(x => x.DepartmentId)

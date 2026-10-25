@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using HospitalCare.Application.Common.Interfaces;
 using HospitalCare.Domain.Services;
+using HospitalCare.Infrastructure.BackgroundServices;
 using HospitalCare.Infrastructure.Identity;
 using HospitalCare.Infrastructure.Authentication;
 using HospitalCare.Infrastructure.Persistence;
@@ -32,6 +33,7 @@ namespace HospitalCare.Infrastructure
             services.AddSingleton<TimeProvider>(TimeProvider.System);
             services.AddSingleton<DoctorCapacityCalculator>();
             services.AddSingleton<QueueEstimator>();
+            services.AddHostedService<NoShowProcessor>();
 
             var paymentProvider = configuration["PaymentGateway:Provider"];
             if (!string.Equals(
