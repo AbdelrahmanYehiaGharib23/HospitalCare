@@ -11,10 +11,11 @@ using Serilog;
 
 namespace HospitalCare.API.Tests.Infrastructure;
 
-internal sealed class HospitalCareApiFactory : WebApplicationFactory<Program>
+internal class HospitalCareApiFactory : WebApplicationFactory<Program>
 {
     private readonly SqliteConnection _connection = new("Data Source=:memory:");
     private readonly Dictionary<string, string?> _previousEnvironmentValues = new();
+    private readonly TimeProvider? _timeProvider;
     private bool _disposed;
 
     public string LogDirectory { get; } = Path.Combine(
@@ -24,8 +25,9 @@ internal sealed class HospitalCareApiFactory : WebApplicationFactory<Program>
 
     public bool PreserveLogFilesOnDispose { get; set; }
 
-    public HospitalCareApiFactory()
+    public HospitalCareApiFactory(TimeProvider? timeProvider = null)
     {
+        _timeProvider = timeProvider;
         Directory.CreateDirectory(LogDirectory);
         SetEnvironmentValue("ConnectionStrings__DefaultConnection", "Data Source=:memory:");
         SetEnvironmentValue(
@@ -55,6 +57,12 @@ internal sealed class HospitalCareApiFactory : WebApplicationFactory<Program>
 
             services.RemoveAll<IDbInitializer>();
             services.AddScoped<IDbInitializer, EnsureCreatedDbInitializer>();
+
+            if (_timeProvider is not null)
+            {
+                services.RemoveAll<TimeProvider>();
+                services.AddSingleton<TimeProvider>(_timeProvider);
+            }
         });
     }
 
