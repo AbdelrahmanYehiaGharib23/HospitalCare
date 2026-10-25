@@ -2,6 +2,10 @@
   <Folder Name="/.gitignore/">
     <File Path=".gitignore" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/HospitalCare.API.Tests/HospitalCare.API.Tests.csproj" />
+    <Project Path="tests/HospitalCare.Application.Tests/HospitalCare.Application.Tests.csproj" />
+  </Folder>
   <Project Path="HospitalCare.API/HospitalCare.API.csproj" />
   <Project Path="HospitalCare.Application/HospitalCare.Application.csproj" />
   <Project Path="HospitalCare.Domain/HospitalCare.Domain.csproj" />
