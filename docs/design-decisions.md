@@ -19,7 +19,12 @@
 - Queue positions are never reused; new appointments use max position plus one, including cancelled rows, while Patient responses show the current rank among `Queued` and `InProgress` appointments.
 - The Fake payment provider uses an HMAC-SHA256 signature over the exact UTF-8 webhook payload and a configured secret; its checkout host is non-routable and refunds are local no-ops.
 - Payment webhooks use a raw JSON event with `gatewayReference`, `status`, `amount`, and `currency`; `X-Payment-Signature` is hexadecimal HMAC-SHA256 over the exact UTF-8 body. This applies only to the internal Fake provider and defines no third-party signing format.
-- Refund requests use the payment transaction ID as their idempotency key so an external refund can be retried after a transient failure.
+- Paymob refund requests use the provider transaction ID and amount; the documented endpoint has no remote idempotency field, so ambiguous timeouts require provider-side reconciliation before retrying.
+- Paymob configuration uses the existing `Paymob:*` user-secrets keys and one `IntegrationId`, sent as a single-entry `payment_methods` array.
+- Paymob callbacks correlate through signed `order.id`; `merchant_order_id` is metadata and is not part of the documented HMAC input.
+- Paymob transaction callbacks are verified using the documented 20-field HMAC order; a missing or null signed field is rejected because Paymob does not document its null encoding.
+- Paymob billing data includes the Patient's name, email, and phone; no billing address is collected or synthesized.
+- Paymob's `refunded_amount_cents` is not included in the documented HMAC input, so a refund callback alone cannot complete a refund; ambiguous refunds remain pending for reconciliation.
 - `RefundPending` records a confirmed payment awaiting external refund completion; database state commits before the gateway refund call so retries cannot lose the refund request.
 - Queue estimates start from the earliest schedule range, treat the day's ranges as contiguous, and use actual completed times to adjust following estimates; missing schedules produce no estimate.
 - Doctor medical-history access requires an appointment record for that Doctor and Patient; the BRD does not limit access by appointment status or date.

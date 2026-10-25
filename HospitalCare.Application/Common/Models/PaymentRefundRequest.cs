@@ -4,4 +4,5 @@ public sealed record PaymentRefundRequest(
     int PaymentTransactionId,
     string GatewayReference,
     decimal Amount,
-    string Currency);
+    string Currency,
+    long? ProviderTransactionId = null);

@@ -36,18 +36,31 @@ namespace HospitalCare.Infrastructure
             services.AddHostedService<NoShowProcessor>();
 
             var paymentProvider = configuration["PaymentGateway:Provider"];
-            if (!string.Equals(
+            if (string.Equals(
                     paymentProvider,
                     "Fake",
                     StringComparison.OrdinalIgnoreCase))
             {
-                throw new InvalidOperationException(
-                    "PaymentGateway:Provider must be configured as Fake.");
+                services.Configure<FakePaymentGatewayOptions>(
+                    configuration.GetSection(FakePaymentGatewayOptions.SectionName));
+                services.AddSingleton<IPaymentGateway, FakePaymentGateway>();
             }
-
-            services.Configure<FakePaymentGatewayOptions>(
-                configuration.GetSection(FakePaymentGatewayOptions.SectionName));
-            services.AddSingleton<IPaymentGateway, FakePaymentGateway>();
+            else if (string.Equals(
+                         paymentProvider,
+                         "Paymob",
+                         StringComparison.OrdinalIgnoreCase))
+            {
+                services.Configure<PaymobPaymentGatewayOptions>(
+                    configuration.GetSection(PaymobPaymentGatewayOptions.SectionName));
+                services.AddHttpClient<PaymobPaymentGateway>();
+                services.AddTransient<IPaymentGateway>(serviceProvider =>
+                    serviceProvider.GetRequiredService<PaymobPaymentGateway>());
+            }
+            else
+            {
+                throw new InvalidOperationException(
+                    "PaymentGateway:Provider must be configured as Fake or Paymob.");
+            }
 
             var timeZoneId = configuration["Hospital:TimeZoneId"];
             var hospitalTimeZone = TimeZoneInfo.FindSystemTimeZoneById(

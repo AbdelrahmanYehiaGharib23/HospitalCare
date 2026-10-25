@@ -53,10 +53,8 @@ public sealed class InitiateAppointmentPaymentCommandHandler
             patient => patient.Id == patientId,
             withTracking: false,
             cancellationToken);
-        if (!patients.Any())
-        {
-            throw new NotFoundException("Patient was not found.");
-        }
+        var patient = patients.SingleOrDefault()
+            ?? throw new NotFoundException("Patient was not found.");
 
         var doctors = await _unitOfWork.Doctors.FindAsync(
             doctor => doctor.Id == request.DoctorId,
@@ -120,11 +118,17 @@ public sealed class InitiateAppointmentPaymentCommandHandler
         _unitOfWork.PaymentTransactions.Add(paymentTransaction);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
+        var merchantReference = $"hospitalcare-payment-{paymentTransaction.Id}";
+
         var checkout = await _paymentGateway.CreateCheckoutAsync(
             new PaymentCheckoutRequest(
                 paymentTransaction.Id,
                 paymentTransaction.Amount,
-                Currency),
+                Currency,
+                merchantReference,
+                patient.Name,
+                patient.Email,
+                patient.Phone),
             cancellationToken);
 
         paymentTransaction.GatewayReference = checkout.GatewayReference;

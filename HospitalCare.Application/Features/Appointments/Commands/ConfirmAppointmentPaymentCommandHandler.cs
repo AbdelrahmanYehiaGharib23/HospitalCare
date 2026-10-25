@@ -113,8 +113,28 @@ public sealed class ConfirmAppointmentPaymentCommandHandler
             cancellationToken);
         var appointment = appointments.SingleOrDefault();
 
+        if (webhookEvent.IsRefunded)
+        {
+            return ConfirmationResult.Completed(
+                CreateResponse(transaction, appointment));
+        }
+
+        if (webhookEvent.Status == PaymentWebhookStatus.Pending)
+        {
+            return ConfirmationResult.Completed(
+                CreateResponse(transaction, appointment));
+        }
+
+        if (webhookEvent.ProviderTransactionId.HasValue &&
+            !transaction.ProviderTransactionId.HasValue)
+        {
+            transaction.ProviderTransactionId =
+                webhookEvent.ProviderTransactionId.Value;
+        }
+
         if (transaction.Status is PaymentStatus.Failed or PaymentStatus.Refunded)
         {
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
             return ConfirmationResult.Completed(
                 CreateResponse(transaction, appointment));
         }
@@ -123,6 +143,7 @@ public sealed class ConfirmAppointmentPaymentCommandHandler
             (appointment.Status != AppointmentStatus.Cancelled ||
                 transaction.Status != PaymentStatus.RefundPending))
         {
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
             return ConfirmationResult.Completed(
                 CreateResponse(transaction, appointment));
         }
@@ -130,6 +151,7 @@ public sealed class ConfirmAppointmentPaymentCommandHandler
         if (transaction.Status is PaymentStatus.Succeeded or
             PaymentStatus.RefundPending)
         {
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
             return ConfirmationResult.RequiresRefund(
                 CreateResponse(transaction, appointment),
                 CreateRefundRequest(transaction));
@@ -303,7 +325,8 @@ public sealed class ConfirmAppointmentPaymentCommandHandler
             transaction.Id,
             transaction.GatewayReference!,
             transaction.Amount,
-            Currency);
+            Currency,
+            transaction.ProviderTransactionId);
     }
 
     private sealed record ConfirmationResult(

@@ -296,6 +296,9 @@ namespace HospitalCare.Infrastructure.Persistence.Migrations
                     b.Property<int>("PatientId")
                         .HasColumnType("int");
 
+                    b.Property<long?>("ProviderTransactionId")
+                        .HasColumnType("bigint");
+
                     b.Property<DateOnly>("RequestedDate")
                         .HasColumnType("date");
 

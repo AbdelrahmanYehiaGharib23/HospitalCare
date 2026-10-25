@@ -22,6 +22,8 @@ namespace HospitalCare.Domain.Entities
 
         public string? GatewayReference { get; set; }
 
+        public long? ProviderTransactionId { get; set; }
+
         public DateTime CreatedAt { get; set; }
 
         public Patient Patient { get; set; } = null!;

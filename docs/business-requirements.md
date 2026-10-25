@@ -191,11 +191,11 @@ Appointment     (1) ── (1) PaymentTransaction
 - A Doctor with `PendingDeactivation` accepts no new bookings while remaining active until the queue drains.
 - `BookingFee` is stored per `AppointmentType` in EGP.
 - `QueuePosition` is assigned as the next value after the highest position for that Doctor and date, including cancelled appointments; a Patient sees their rank among `Queued` and `InProgress` appointments.
-- The configured payment provider is selected through `IPaymentGateway`; only the internal Fake provider is implemented until an external provider is explicitly approved.
+- The configured payment provider is selected through `IPaymentGateway`; Fake remains the default and Paymob uses its documented Intention, transaction callback, and refund APIs.
 - Available-date queries accept an inclusive range of at most 90 calendar days.
 - A Doctor with `PendingDeactivation` accepts no new bookings, allowing the existing queue to drain.
 - `QueuePosition` is the next value after the highest value for the Doctor and date, including cancelled appointments; a Patient sees their rank among `Queued` and `InProgress` appointments.
-- `RefundPending` records a confirmed payment that requires a refund; the payment transaction ID is the gateway refund idempotency key.
+- `RefundPending` records a confirmed payment that requires a refund; Paymob refund requests use the provider transaction ID and amount because its documented refund request has no idempotency field.
 - A Department stays active with `PendingDeactivation` while any Doctor has queued or in-progress Appointments; each Doctor stops accepting bookings while its own queue drains.
 - A Patient is present only after Receptionist check-in. A Doctor or Receptionist calls the next checked-in Patient, starting the five-minute no-show window.
 - If the first missed call has no later queued Patient to swap with, it remains pending and `SkipCount` is unchanged until a next Patient exists.

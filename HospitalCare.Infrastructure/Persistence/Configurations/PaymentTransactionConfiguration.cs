@@ -24,6 +24,8 @@ namespace HospitalCare.Infrastructure.Persistence.Configurations
             builder.Property(x => x.GatewayReference)
                 .HasMaxLength(200);
 
+            builder.Property(x => x.ProviderTransactionId);
+
             builder.Property(x => x.CreatedAt)
                 .IsRequired();
 

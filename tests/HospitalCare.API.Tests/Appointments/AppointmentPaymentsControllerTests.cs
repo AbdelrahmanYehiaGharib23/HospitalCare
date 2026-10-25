@@ -219,13 +219,55 @@ public sealed class AppointmentPaymentsControllerTests
             client,
             $"fake-{checkout.PaymentTransactionId}",
             checkout.Amount,
-            "Failed");
+            "Failed",
+            useQueryHmac: true);
         Assert.Equal(HttpStatusCode.OK, webhookResponse.StatusCode);
         var result = await webhookResponse.Content
             .ReadFromJsonAsync<PaymentWebhookResultDto>(
                 TestContext.Current.CancellationToken);
         Assert.NotNull(result);
         Assert.Equal(PaymentStatus.Failed, result.Status);
+        Assert.Equal(0, await CountAppointmentsAsync(
+            factory,
+            TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task ConfirmPayment_PendingGatewayEvent_KeepsPaymentPending()
+    {
+        using var factory = new HospitalCareApiFactory();
+        using var client = factory.CreateClient();
+        const string email = "pending-payment-patient@example.com";
+        var token = await RegisterPatientAsync(client, email);
+        var booking = await SeedBookingDataAsync(factory, email);
+        client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", token);
+        using var checkoutResponse = await client.PostAsJsonAsync(
+            "/api/appointments/payments",
+            new
+            {
+                booking.DoctorId,
+                booking.AppointmentTypeId,
+                RequestedDate = booking.Date
+            },
+            TestContext.Current.CancellationToken);
+        var checkout = await checkoutResponse.Content
+            .ReadFromJsonAsync<InitiatedAppointmentPaymentDto>(
+                TestContext.Current.CancellationToken);
+        Assert.NotNull(checkout);
+
+        using var webhookResponse = await SendWebhookAsync(
+            client,
+            $"fake-{checkout.PaymentTransactionId}",
+            checkout.Amount,
+            "Pending");
+
+        Assert.Equal(HttpStatusCode.OK, webhookResponse.StatusCode);
+        var result = await webhookResponse.Content
+            .ReadFromJsonAsync<PaymentWebhookResultDto>(
+                TestContext.Current.CancellationToken);
+        Assert.NotNull(result);
+        Assert.Equal(PaymentStatus.Pending, result.Status);
         Assert.Equal(0, await CountAppointmentsAsync(
             factory,
             TestContext.Current.CancellationToken));
@@ -419,7 +461,8 @@ public sealed class AppointmentPaymentsControllerTests
         HttpClient client,
         string gatewayReference,
         decimal amount,
-        string status)
+        string status,
+        bool useQueryHmac = false)
     {
         var payload =
             $"{{\"gatewayReference\":\"{gatewayReference}\",\"status\":\"{status}\",\"amount\":{amount},\"currency\":\"EGP\"}}";
@@ -427,16 +470,22 @@ public sealed class AppointmentPaymentsControllerTests
             "HospitalCare integration test webhook signing secret");
         var signature = Convert.ToHexString(
             HMACSHA256.HashData(key, Encoding.UTF8.GetBytes(payload)));
+        var requestPath = useQueryHmac
+            ? $"/api/payments/webhook?hmac={Uri.EscapeDataString(signature)}"
+            : "/api/payments/webhook";
         using var request = new HttpRequestMessage(
             HttpMethod.Post,
-            "/api/payments/webhook")
+            requestPath)
         {
             Content = new StringContent(
                 payload,
                 Encoding.UTF8,
                 "application/json")
         };
-        request.Headers.Add("X-Payment-Signature", signature);
+        if (!useQueryHmac)
+        {
+            request.Headers.Add("X-Payment-Signature", signature);
+        }
         return await client.SendAsync(
             request,
             TestContext.Current.CancellationToken);

@@ -4,4 +4,6 @@ public sealed record PaymentWebhookEvent(
     string GatewayReference,
     PaymentWebhookStatus Status,
     decimal Amount,
-    string Currency);
+    string Currency,
+    long? ProviderTransactionId = null,
+    bool IsRefunded = false);

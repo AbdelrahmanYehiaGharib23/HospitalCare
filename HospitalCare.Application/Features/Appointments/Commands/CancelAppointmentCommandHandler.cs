@@ -184,7 +184,8 @@ public sealed class CancelAppointmentCommandHandler
             paymentTransaction.Id,
             paymentTransaction.GatewayReference,
             paymentTransaction.Amount,
-            Currency);
+            Currency,
+            paymentTransaction.ProviderTransactionId);
     }
 
     private sealed record CancellationResult(

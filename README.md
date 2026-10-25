@@ -47,6 +47,21 @@ The equivalent environment variable is `PaymentGateway__Fake__WebhookSecret`. Th
 
 The webhook reads a raw UTF-8 JSON body with `gatewayReference`, `status` (`Succeeded` or `Failed`), `amount`, and `currency` (`EGP`). Send `X-Payment-Signature` as the hexadecimal HMAC-SHA256 of the exact request body using the configured secret. A successful callback creates the queued Appointment if capacity remains; otherwise the Fake refund completes locally.
 
+To use Paymob, set `PaymentGateway:Provider` to `Paymob` and configure the keys, integration ID, and publicly reachable HTTPS notification URL from the Paymob dashboard. Keep every key and secret in user secrets or environment variables:
+
+```powershell
+dotnet user-secrets set "PaymentGateway:Provider" "Paymob" --project HospitalCare.API
+dotnet user-secrets set "Paymob:SecretKey" "PAYMOB_SECRET_KEY" --project HospitalCare.API
+dotnet user-secrets set "Paymob:PublicKey" "PAYMOB_PUBLIC_KEY" --project HospitalCare.API
+dotnet user-secrets set "Paymob:HmacSecret" "PAYMOB_HMAC_SECRET" --project HospitalCare.API
+dotnet user-secrets set "Paymob:IntegrationId" "PAYMOB_INTEGRATION_ID" --project HospitalCare.API
+dotnet user-secrets set "Paymob:NotificationUrl" "https://YOUR_PUBLIC_HOST/api/payments/webhook" --project HospitalCare.API
+dotnet user-secrets set "Paymob:Currency" "EGP" --project HospitalCare.API
+dotnet user-secrets set "Paymob:RedirectUrl" "https://YOUR_FRONTEND_HOST/payment/complete" --project HospitalCare.API
+```
+
+`Paymob:BaseUrl` defaults to `https://accept.paymob.com` and can be set to the official regional origin for the merchant account. Set `Paymob:RedirectUrl` when a customer-facing completion URL is available. Paymob checkout creates an Intention and returns the Unified Checkout URL. Callbacks are correlated by signed `order.id`; the API verifies the documented transaction HMAC before processing them. A Paymob refund requires the provider transaction ID saved from a verified callback. The adapter is tested with HTTP fakes; it has not been verified against a merchant account.
+
 Doctor schedules use local wall-clock time. Availability calculations use `Hospital:TimeZoneId`, which defaults to `Africa/Cairo`; the environment variable name is `Hospital__TimeZoneId`.
 
 ## Authentication
@@ -107,7 +122,7 @@ All routes are under `/api`. Requests that require authentication use a JWT bear
 | `POST /appointments/{id}/start`, `POST /appointments/{id}/complete` | Doctor | Start or complete an appointment in the Doctor's own queue. |
 | `GET /patients/me`, `PUT /patients/me`, `GET /patients/me/medical-history` | Patient | Read or update the Patient's own profile and medical history. |
 | `GET /patients/{id}/medical-history` | Doctor, Receptionist | Read a Patient's history; Doctors need an appointment record with that Patient. |
-| `POST /payments/webhook` | Anonymous, signed callback | Verify a payment callback. The internal Fake provider's request format is described above. |
+| `POST /payments/webhook` | Anonymous, signed callback | Verify the internal Fake callback or Paymob transaction callback. |
 
 ## Booking and queue behavior
 
@@ -144,8 +159,8 @@ The first missed call remains queued and does not increment the skip count until
 - Receptionists check Patients in. A Doctor or Receptionist calling a checked-in Patient starts the five-minute no-show window.
 - Schedule times are hospital-local wall-clock values. Timestamps are UTC; the hospital time zone defaults to `Africa/Cairo`.
 - Capacity uses appointment duration and remaining schedule time. Completed, cancelled, and no-show-penalized appointments do not consume pending capacity.
-- Appointment booking fees are stored on the appointment type in EGP. Refunds use the payment transaction ID as the idempotency key.
-- Payment integration is behind `IPaymentGateway`. Only the internal Fake provider is implemented; it does not contact a payment service.
+- Appointment booking fees are stored on the appointment type in EGP. Paymob refund requests use the provider transaction ID and amount; the provider documents no remote idempotency key.
+- Payment integration is behind `IPaymentGateway`. Fake remains the default; Paymob uses the documented Intention API, transaction HMAC, and refund endpoint.
 
 Sample requests are in `HospitalCare.API/HospitalCare.API.http`. Replace its IDs and bearer tokens with values from the API responses. Use today's hospital-local date for queue actions and calculate the Fake webhook signature from the exact JSON body.
 

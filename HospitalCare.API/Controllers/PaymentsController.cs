@@ -22,7 +22,8 @@ public sealed class PaymentsController : ControllerBase
     [AllowAnonymous]
     [Consumes("application/json")]
     public async Task<ActionResult<PaymentWebhookResultDto>> HandleWebhook(
-        [FromHeader(Name = "X-Payment-Signature")] string signature,
+        [FromHeader(Name = "X-Payment-Signature")] string? signature,
+        [FromQuery(Name = "hmac")] string? hmac,
         CancellationToken cancellationToken)
     {
         using var reader = new StreamReader(
@@ -32,7 +33,9 @@ public sealed class PaymentsController : ControllerBase
             leaveOpen: true);
         var payload = await reader.ReadToEndAsync(cancellationToken);
         var result = await _sender.Send(
-            new ConfirmAppointmentPaymentCommand(payload, signature),
+            new ConfirmAppointmentPaymentCommand(
+                payload,
+                signature ?? hmac ?? string.Empty),
             cancellationToken);
 
         return Ok(result);
