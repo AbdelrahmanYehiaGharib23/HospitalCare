@@ -8,7 +8,7 @@ HospitalCare is a medium-sized, multi-department hospital appointment scheduling
 
 | Actor | Role in the system |
 |---|---|
-| **Admin** | Manages departments, doctors, and appointment types |
+| **Admin** | Manages departments, doctors, appointment types, and receptionist accounts |
 | **Doctor** | Manages their own schedule; runs their daily queue (start/complete appointments) |
 | **Receptionist** | Oversight across all doctors' queues; can act on a patient's behalf |
 | **Patient** | Self-registers; books, views, and cancels their own appointments |
@@ -146,6 +146,7 @@ Appointment     (1) ── (1) PaymentTransaction
 | Manage Departments | Yes | No | No | No |
 | Manage Doctors | Yes | No | No | No |
 | Manage Appointment Types | Yes | No | No | No |
+| Create Receptionist Account | Yes | No | No | No |
 
 ## 8. CQRS Commands & Queries
 
@@ -160,6 +161,7 @@ Appointment     (1) ── (1) PaymentTransaction
 - `CreateDepartmentCommand` / `DeactivateDepartmentCommand`
 - `CreateDoctorCommand` / `UpdateDoctorScheduleCommand` / `DeactivateDoctorCommand`
 - `CreateAppointmentTypeCommand`
+- `CreateReceptionistAccountCommand`
 
 **Queries**
 - `GetDepartmentsQuery` *(already implemented)*

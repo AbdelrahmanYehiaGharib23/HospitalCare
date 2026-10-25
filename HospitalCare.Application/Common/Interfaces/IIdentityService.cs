@@ -16,4 +16,9 @@ public interface IIdentityService
         string password,
         int departmentId,
         CancellationToken cancellationToken = default);
+
+    Task CreateReceptionistAsync(
+        string email,
+        string password,
+        CancellationToken cancellationToken = default);
 }

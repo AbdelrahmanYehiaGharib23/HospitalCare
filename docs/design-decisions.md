@@ -7,3 +7,4 @@
 - Department updates change the name only; deactivation follows the graceful queue rule planned for M6.
 - Doctor.UserId remains nullable for existing rows; newly created doctor profiles link to an Identity user.
 - Patient doctor queries return active Doctors only; Admin can request inactive Doctors explicitly.
+- Receptionist accounts are Identity users without a separate domain profile; the create response contains the email and role.

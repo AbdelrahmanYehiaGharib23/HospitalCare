@@ -206,6 +206,70 @@ public class IdentityService : IIdentityService
         }
     }
 
+    public async Task CreateReceptionistAsync(
+        string email,
+        string password,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        await using var transaction =
+            await _dbContext.Database.BeginTransactionAsync(
+                cancellationToken);
+
+        try
+        {
+            if (await _userManager.FindByEmailAsync(email) is not null)
+            {
+                throw new ConflictException(
+                    "An account with this email already exists.");
+            }
+
+            var user = new ApplicationUser
+            {
+                UserName = email,
+                Email = email
+            };
+
+            var createResult = await _userManager.CreateAsync(user, password);
+
+            if (!createResult.Succeeded)
+            {
+                throw new BusinessRuleException(
+                    FormatIdentityErrors(createResult.Errors));
+            }
+
+            if (!await _roleManager.RoleExistsAsync(Roles.Receptionist))
+            {
+                var roleResult = await _roleManager.CreateAsync(
+                    new IdentityRole(Roles.Receptionist));
+
+                if (!roleResult.Succeeded)
+                {
+                    throw new BusinessRuleException(
+                        FormatIdentityErrors(roleResult.Errors));
+                }
+            }
+
+            var roleAssignmentResult = await _userManager.AddToRoleAsync(
+                user,
+                Roles.Receptionist);
+
+            if (!roleAssignmentResult.Succeeded)
+            {
+                throw new BusinessRuleException(
+                    FormatIdentityErrors(roleAssignmentResult.Errors));
+            }
+
+            await transaction.CommitAsync(cancellationToken);
+        }
+        catch
+        {
+            await transaction.RollbackAsync(CancellationToken.None);
+            throw;
+        }
+    }
+
 
     private async Task<JwtTokenResult> GenerateTokenAsync(
         ApplicationUser user)
