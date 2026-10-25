@@ -1,5 +1,6 @@
 ﻿using System.Text;
 using HospitalCare.Application.Common.Interfaces;
+using HospitalCare.Domain.Services;
 using HospitalCare.Infrastructure.Identity;
 using HospitalCare.Infrastructure.Authentication;
 using HospitalCare.Infrastructure.Persistence;
@@ -27,6 +28,16 @@ namespace HospitalCare.Infrastructure
             services.AddScoped<IDbInitializer, DbInitializer>();
             services.AddScoped<AdminAccountSeeder>();
             services.AddScoped<AppointmentTypeSeeder>();
+            services.AddSingleton<TimeProvider>(TimeProvider.System);
+            services.AddSingleton<DoctorCapacityCalculator>();
+
+            var timeZoneId = configuration["Hospital:TimeZoneId"];
+            var hospitalTimeZone = TimeZoneInfo.FindSystemTimeZoneById(
+                string.IsNullOrWhiteSpace(timeZoneId)
+                    ? "Africa/Cairo"
+                    : timeZoneId);
+            services.AddSingleton(hospitalTimeZone);
+
             services.Configure<AdminAccountOptions>(
                 configuration.GetSection(AdminAccountOptions.SectionName));
 

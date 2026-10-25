@@ -181,4 +181,3 @@ Appointment     (1) ── (1) PaymentTransaction
 - Whether the 5-minute no-show grace period is configurable per doctor or fixed system-wide
 - Receptionist's exact write-access boundaries beyond what's listed in section 7
 - Optional safety margin: whether to cap bookings below 100% of working time (e.g. 90%) to absorb overruns
-- Time zone for "current time" in BR-03: store timestamps in UTC, evaluate `DoctorSchedule` in the hospital's local time

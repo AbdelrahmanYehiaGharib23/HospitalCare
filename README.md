@@ -37,6 +37,8 @@ dotnet user-secrets set "Jwt:SecretKey" "REPLACE_WITH_A_RANDOM_SECRET_OF_AT_LEAS
 
 Replace the example value before running the command. `Jwt:Issuer` and `Jwt:Audience` have development values in `HospitalCare.API/appsettings.json`. User secrets are stored outside the repository. Environment variables can also be used with the names `ConnectionStrings__DefaultConnection` and `Jwt__SecretKey`.
 
+Doctor schedules use local wall-clock time. Availability calculations use `Hospital:TimeZoneId`, which defaults to `Africa/Cairo`; the environment variable name is `Hospital__TimeZoneId`.
+
 ## Database
 
 On startup, `DbInitializer` applies pending Entity Framework migrations and seeds the `Admin`, `Doctor`, `Receptionist`, and `Patient` roles.

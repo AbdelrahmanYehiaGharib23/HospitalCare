@@ -9,6 +9,7 @@ using HospitalCare.Application.Features.DoctorSchedules.Queries;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace HospitalCare.API.Controllers;
 
@@ -64,6 +65,26 @@ public sealed class DoctorsController : ControllerBase
     {
         var result = await _sender.Send(
             new GetDoctorScheduleQuery(id),
+            cancellationToken);
+
+        return Ok(result);
+    }
+
+    [HttpGet("{id:int}/available-dates")]
+    [Authorize(Roles = Roles.Patient)]
+    public async Task<ActionResult<IReadOnlyList<DoctorAvailableDateDto>>> GetAvailableDates(
+        int id,
+        [FromQuery] int appointmentTypeId,
+        [FromQuery, BindRequired] DateOnly from,
+        [FromQuery, BindRequired] DateOnly to,
+        CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(
+            new GetDoctorAvailableDatesQuery(
+                id,
+                appointmentTypeId,
+                from,
+                to),
             cancellationToken);
 
         return Ok(result);
