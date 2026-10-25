@@ -10,4 +10,4 @@
 - Receptionist accounts are Identity users without a separate domain profile; the create response contains the email and role.
 - Admin seeding requires both `SeedAdmin:Email` and `SeedAdmin:Password`; an existing non-Admin account is not promoted.
 - DoctorSchedule replacement accepts an empty range set to clear the weekly schedule; patients can read schedules for active Doctors, Doctors can read their own, and Admins can read any.
-- Available-date queries include both requested bounds and are limited to 90 calendar days; inactive Doctors return not found and pending-deactivation Doctors return no dates. Schedules use `Hospital:TimeZoneId`, default `Africa/Cairo`, while timestamps remain UTC.
+- Available-date queries include both requested bounds; inactive Doctors return not found and pending-deactivation Doctors return no dates. Schedules use `Hospital:TimeZoneId`, default `Africa/Cairo`, while timestamps remain UTC.

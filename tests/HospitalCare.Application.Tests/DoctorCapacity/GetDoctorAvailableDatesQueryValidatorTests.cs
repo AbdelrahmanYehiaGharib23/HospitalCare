@@ -52,14 +52,14 @@ public sealed class GetDoctorAvailableDatesQueryValidatorTests
     }
 
     [Fact]
-    public void Validate_RangeExceedsMaximumDays_Fails()
+    public void Validate_LongRequestedRange_Succeeds()
     {
         var validator = new GetDoctorAvailableDatesQueryValidator();
         var from = new DateOnly(2026, 6, 1);
 
         var result = validator.Validate(
-            new GetDoctorAvailableDatesQuery(1, 1, from, from.AddDays(90)));
+            new GetDoctorAvailableDatesQuery(1, 1, from, from.AddDays(365)));
 
-        Assert.False(result.IsValid);
+        Assert.True(result.IsValid);
     }
 }
