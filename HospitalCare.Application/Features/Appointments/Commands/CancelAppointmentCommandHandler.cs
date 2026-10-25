@@ -107,11 +107,8 @@ public sealed class CancelAppointmentCommandHandler
         PaymentRefundRequest? refundRequest = null;
         if (appointment.Status == AppointmentStatus.Cancelled)
         {
-            if (paymentTransaction.Status == PaymentStatus.RefundPending)
-            {
-                refundRequest = CreateRefundRequest(paymentTransaction);
-            }
-            else if (paymentTransaction.Status != PaymentStatus.Refunded)
+            if (paymentTransaction.Status is not PaymentStatus.RefundPending and
+                not PaymentStatus.Refunded)
             {
                 throw new BusinessRuleException(
                     "The cancelled Appointment cannot be refunded from its current payment status.");

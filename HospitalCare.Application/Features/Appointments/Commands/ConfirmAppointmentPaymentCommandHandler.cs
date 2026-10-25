@@ -139,17 +139,21 @@ public sealed class ConfirmAppointmentPaymentCommandHandler
                 CreateResponse(transaction, appointment));
         }
 
-        if (appointment is not null &&
-            (appointment.Status != AppointmentStatus.Cancelled ||
-                transaction.Status != PaymentStatus.RefundPending))
+        if (transaction.Status == PaymentStatus.RefundPending)
         {
             await _unitOfWork.SaveChangesAsync(cancellationToken);
             return ConfirmationResult.Completed(
                 CreateResponse(transaction, appointment));
         }
 
-        if (transaction.Status is PaymentStatus.Succeeded or
-            PaymentStatus.RefundPending)
+        if (appointment is not null)
+        {
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            return ConfirmationResult.Completed(
+                CreateResponse(transaction, appointment));
+        }
+
+        if (transaction.Status == PaymentStatus.Succeeded)
         {
             await _unitOfWork.SaveChangesAsync(cancellationToken);
             return ConfirmationResult.RequiresRefund(

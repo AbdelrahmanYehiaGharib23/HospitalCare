@@ -361,6 +361,83 @@ public sealed class AppointmentPaymentsControllerTests
     }
 
     [Fact]
+    public async Task RefundPending_DuplicateWebhookAndCancellation_DoNotRetryProviderRefund()
+    {
+        using var factory = new HospitalCareApiFactory();
+        using var client = factory.CreateClient();
+        var cancellationToken = TestContext.Current.CancellationToken;
+        const string email = "pending-refund-patient@example.com";
+        var token = await RegisterPatientAsync(client, email);
+        var booking = await SeedBookingDataAsync(factory, email);
+        client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", token);
+
+        using var checkoutResponse = await client.PostAsJsonAsync(
+            "/api/appointments/payments",
+            new
+            {
+                booking.DoctorId,
+                booking.AppointmentTypeId,
+                RequestedDate = booking.Date
+            },
+            cancellationToken);
+        Assert.Equal(HttpStatusCode.OK, checkoutResponse.StatusCode);
+        var checkout = await checkoutResponse.Content
+            .ReadFromJsonAsync<InitiatedAppointmentPaymentDto>(
+                cancellationToken);
+        Assert.NotNull(checkout);
+
+        using var paymentResponse = await SendWebhookAsync(
+            client,
+            $"fake-{checkout.PaymentTransactionId}",
+            checkout.Amount,
+            "Succeeded");
+        Assert.Equal(HttpStatusCode.OK, paymentResponse.StatusCode);
+        var paymentResult = await paymentResponse.Content
+            .ReadFromJsonAsync<PaymentWebhookResultDto>(cancellationToken);
+        Assert.NotNull(paymentResult);
+        Assert.NotNull(paymentResult.AppointmentId);
+
+        using (var scope = factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider
+                .GetRequiredService<ApplicationDbContext>();
+            var payment = await dbContext.PaymentTransactions
+                .SingleAsync(
+                    transaction => transaction.Id == checkout.PaymentTransactionId,
+                    cancellationToken);
+            var appointment = await dbContext.Appointments
+                .SingleAsync(
+                    item => item.Id == paymentResult.AppointmentId,
+                    cancellationToken);
+            payment.Status = PaymentStatus.RefundPending;
+            appointment.Status = AppointmentStatus.Cancelled;
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+
+        using var duplicateWebhookResponse = await SendWebhookAsync(
+            client,
+            $"fake-{checkout.PaymentTransactionId}",
+            checkout.Amount,
+            "Succeeded");
+        Assert.Equal(HttpStatusCode.OK, duplicateWebhookResponse.StatusCode);
+        var duplicateWebhookResult = await duplicateWebhookResponse.Content
+            .ReadFromJsonAsync<PaymentWebhookResultDto>(cancellationToken);
+        Assert.NotNull(duplicateWebhookResult);
+        Assert.Equal(PaymentStatus.RefundPending, duplicateWebhookResult.Status);
+
+        using var duplicateCancelResponse = await client.PostAsync(
+            $"/api/appointments/{paymentResult.AppointmentId}/cancel",
+            content: null,
+            cancellationToken);
+        Assert.Equal(HttpStatusCode.OK, duplicateCancelResponse.StatusCode);
+        var cancelledAppointment = await duplicateCancelResponse.Content
+            .ReadFromJsonAsync<CancelledAppointmentDto>(cancellationToken);
+        Assert.NotNull(cancelledAppointment);
+        Assert.Equal(PaymentStatus.RefundPending, cancelledAppointment.PaymentStatus);
+    }
+
+    [Fact]
     public async Task InitiatePayment_AnonymousUser_ReturnsUnauthorized()
     {
         using var factory = new HospitalCareApiFactory();

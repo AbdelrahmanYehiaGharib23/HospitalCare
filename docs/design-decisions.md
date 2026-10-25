@@ -26,7 +26,7 @@
 - Paymob transaction callbacks are verified using the documented 20-field HMAC order; a missing or null signed field is rejected because Paymob does not document its null encoding.
 - Paymob billing data includes the Patient's name, email, and phone; no billing address is collected or synthesized.
 - Paymob's `refunded_amount_cents` is not included in the documented HMAC input, so a refund callback alone cannot complete a refund; ambiguous refunds remain pending for reconciliation.
-- `RefundPending` records a confirmed payment awaiting external refund completion; database state commits before the gateway refund call so retries cannot lose the refund request.
+- `RefundPending` is saved before the provider refund call; duplicate callbacks and cancellation requests do not resubmit it because Paymob documents no idempotency key, so reconcile provider status before retrying.
 - Queue estimates start from the earliest schedule range, treat the day's ranges as contiguous, and use actual completed times to adjust following estimates; missing schedules produce no estimate.
 - Doctor medical-history access requires an appointment record for that Doctor and Patient; the BRD does not limit access by appointment status or date.
 - Login locks an account for 15 minutes after five failed password checks and limits each client IP to ten login requests per minute.

@@ -62,6 +62,8 @@ dotnet user-secrets set "Paymob:RedirectUrl" "https://YOUR_FRONTEND_HOST/payment
 
 `Paymob:BaseUrl` defaults to `https://accept.paymob.com` and can be set to the official regional origin for the merchant account. Set `Paymob:RedirectUrl` when a customer-facing completion URL is available. Paymob checkout creates an Intention and returns the Unified Checkout URL. Callbacks are correlated by signed `order.id`; the API verifies the documented transaction HMAC before processing them. A Paymob refund requires the provider transaction ID saved from a verified callback. The adapter has been verified by creating a test Intention with test credentials; no payment was completed.
 
+Transactions in `RefundPending` are not submitted for refund again by duplicate callbacks or cancellation requests. Check the transaction with Paymob before manually retrying an ambiguous refund.
+
 Doctor schedules use local wall-clock time. Availability calculations use `Hospital:TimeZoneId`, which defaults to `Africa/Cairo`; the environment variable name is `Hospital__TimeZoneId`.
 
 ## Authentication
