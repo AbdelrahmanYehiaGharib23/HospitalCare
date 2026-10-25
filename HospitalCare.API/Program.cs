@@ -1,6 +1,8 @@
 using HospitalCare.Application;
 using HospitalCare.Application.Common.Interfaces;
 using HospitalCare.Infrastructure;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.OpenApi;
 
 namespace HospitalCare.API
 {
@@ -14,7 +16,50 @@ namespace HospitalCare.API
 
             builder.Services.AddControllers();
             // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-            builder.Services.AddOpenApi();
+            builder.Services.AddOpenApi(options =>
+            {
+                options.AddDocumentTransformer(
+                    (document, context, cancellationToken) =>
+                    {
+                        document.Components ??= new OpenApiComponents();
+
+                        document.Components.SecuritySchemes ??=
+                            new Dictionary<string, IOpenApiSecurityScheme>();
+
+                        document.Components.SecuritySchemes["Bearer"] =
+                            new OpenApiSecurityScheme
+                            {
+                                Type = SecuritySchemeType.Http,
+                                Scheme = "bearer",
+                                BearerFormat = "JWT",
+                                Description = "Enter your JWT Bearer token."
+                            };
+
+                        return Task.CompletedTask;
+                    });
+
+                options.AddOperationTransformer(
+                    (operation, context, cancellationToken) =>
+                    {
+                        var endpointMetadata = context.Description
+                            .ActionDescriptor.EndpointMetadata;
+
+                        if (endpointMetadata.OfType<IAuthorizeData>().Any() &&
+                            !endpointMetadata.OfType<AllowAnonymousAttribute>().Any())
+                        {
+                            operation.Security ??= [];
+                            operation.Security.Add(
+                                new OpenApiSecurityRequirement
+                                {
+                                    [new OpenApiSecuritySchemeReference(
+                                        "Bearer",
+                                        context.Document)] = []
+                                });
+                        }
+
+                        return Task.CompletedTask;
+                    });
+            });
             builder.Services.AddApplication();
             // Infrastructure
             builder.Services.AddInfrastructure(builder.Configuration);
@@ -38,7 +83,7 @@ namespace HospitalCare.API
                 {
                     options.SwaggerEndpoint(
                         "/openapi/v1.json",
-                        "Project Management API v1");
+                        "HospitalCare API v1");
                 });
             }
 
