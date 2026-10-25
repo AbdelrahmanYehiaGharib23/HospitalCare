@@ -92,6 +92,46 @@ public sealed class PaymobPaymentGatewayTests
     }
 
     [Fact]
+    public async Task CreateCheckoutAsync_PatientHasOneName_OmitsLastName()
+    {
+        HttpRequestMessage? sentRequest = null;
+        using var client = new HttpClient(new StubHttpMessageHandler(
+            (request, _) =>
+            {
+                sentRequest = request;
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.Created)
+                {
+                    Content = new StringContent(
+                        "{\"client_secret\":\"csk_test_abc\",\"intention_order_id\":654321}")
+                });
+            }));
+        var gateway = CreateGateway(client);
+
+        await gateway.CreateCheckoutAsync(
+            new PaymentCheckoutRequest(
+                17,
+                1m,
+                "EGP",
+                "hospitalcare-payment-17",
+                "Mona",
+                "mona@example.com",
+                "+201000000000"),
+            TestContext.Current.CancellationToken);
+
+        Assert.NotNull(sentRequest);
+        using var body = JsonDocument.Parse(
+            await sentRequest.Content!.ReadAsStringAsync(
+                TestContext.Current.CancellationToken));
+        Assert.Equal(
+            "Mona",
+            body.RootElement.GetProperty("billing_data").GetProperty("first_name").GetString());
+        Assert.False(
+            body.RootElement.GetProperty("billing_data").TryGetProperty(
+                "last_name",
+                out _));
+    }
+
+    [Fact]
     public async Task RefundAsync_ValidRequest_UsesProviderTransactionAndAmountInCents()
     {
         HttpRequestMessage? sentRequest = null;

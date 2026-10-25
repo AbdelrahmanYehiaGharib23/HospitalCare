@@ -327,19 +327,19 @@ public sealed class PaymobPaymentGateway : IPaymentGateway
         return decimal.ToInt32(cents);
     }
 
-    private static (string FirstName, string LastName) SplitName(string name)
+    private static (string FirstName, string? LastName) SplitName(string name)
     {
         var parts = name.Split(
             ' ',
             StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         if (parts.Length == 0)
         {
-            return (string.Empty, string.Empty);
+            return (string.Empty, null);
         }
 
         return (
             parts[0],
-            parts.Length > 1 ? string.Join(' ', parts.Skip(1)) : string.Empty);
+            parts.Length > 1 ? string.Join(' ', parts.Skip(1)) : null);
     }
 
     private static bool TryGetTransaction(
@@ -409,7 +409,9 @@ public sealed class PaymobPaymentGateway : IPaymentGateway
 
     private sealed record BillingData(
         [property: JsonPropertyName("first_name")] string FirstName,
-        [property: JsonPropertyName("last_name")] string LastName,
+        [property: JsonPropertyName("last_name")]
+        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        string? LastName,
         [property: JsonPropertyName("email")] string Email,
         [property: JsonPropertyName("phone_number")] string PhoneNumber);
 

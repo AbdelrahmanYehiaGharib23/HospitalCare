@@ -60,7 +60,7 @@ dotnet user-secrets set "Paymob:Currency" "EGP" --project HospitalCare.API
 dotnet user-secrets set "Paymob:RedirectUrl" "https://YOUR_FRONTEND_HOST/payment/complete" --project HospitalCare.API
 ```
 
-`Paymob:BaseUrl` defaults to `https://accept.paymob.com` and can be set to the official regional origin for the merchant account. Set `Paymob:RedirectUrl` when a customer-facing completion URL is available. Paymob checkout creates an Intention and returns the Unified Checkout URL. Callbacks are correlated by signed `order.id`; the API verifies the documented transaction HMAC before processing them. A Paymob refund requires the provider transaction ID saved from a verified callback. The adapter is tested with HTTP fakes; it has not been verified against a merchant account.
+`Paymob:BaseUrl` defaults to `https://accept.paymob.com` and can be set to the official regional origin for the merchant account. Set `Paymob:RedirectUrl` when a customer-facing completion URL is available. Paymob checkout creates an Intention and returns the Unified Checkout URL. Callbacks are correlated by signed `order.id`; the API verifies the documented transaction HMAC before processing them. A Paymob refund requires the provider transaction ID saved from a verified callback. The adapter has been verified by creating a test Intention with test credentials; no payment was completed.
 
 Doctor schedules use local wall-clock time. Availability calculations use `Hospital:TimeZoneId`, which defaults to `Africa/Cairo`; the environment variable name is `Hospital__TimeZoneId`.
 
