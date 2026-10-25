@@ -336,6 +336,6 @@ public class IdentityService : IIdentityService
     private static string FormatIdentityErrors(
         IEnumerable<IdentityError> errors)
     {
-        return string.Join("; ",errors.Select(error => error.Description));
+        return string.Join("; ", errors.Select(error => error.Description));
     }
 }
