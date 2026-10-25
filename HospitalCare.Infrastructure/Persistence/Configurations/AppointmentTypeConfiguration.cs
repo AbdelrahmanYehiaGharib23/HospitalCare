@@ -12,7 +12,17 @@ namespace HospitalCare.Infrastructure.Persistence.Configurations
     {
         public  void Configure(EntityTypeBuilder<AppointmentType> builder)
         {
-            builder.ToTable("AppointmentTypes");
+            builder.ToTable("AppointmentTypes",
+                tableBuilder =>
+                {
+                    tableBuilder.HasCheckConstraint(
+                        "CK_AppointmentTypes_DurationMinutes",
+                        "[DurationMinutes] > 0");
+
+                    tableBuilder.HasCheckConstraint(
+                        "CK_AppointmentTypes_BookingFee",
+                        "[BookingFee] > 0");
+                });
 
             builder.HasKey(x => x.Id);
 
@@ -23,13 +33,9 @@ namespace HospitalCare.Infrastructure.Persistence.Configurations
             builder.Property(x => x.DurationMinutes)
                 .IsRequired();
 
-            builder.ToTable("AppointmentTypes",
-                 tableBuilder =>
-                   {
-                    tableBuilder.HasCheckConstraint(
-                    "CK_AppointmentTypes_DurationMinutes",
-                     "[DurationMinutes] > 0");
-                       });
+            builder.Property(x => x.BookingFee)
+                .HasPrecision(18, 2)
+                .IsRequired();
 
             builder.HasMany(x => x.Appointments)
                 .WithOne(x => x.AppointmentType)

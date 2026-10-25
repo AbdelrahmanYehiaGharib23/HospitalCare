@@ -87,6 +87,10 @@ namespace HospitalCare.Infrastructure.Persistence.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<decimal>("BookingFee")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<int>("DurationMinutes")
                         .HasColumnType("int");
 
@@ -99,6 +103,8 @@ namespace HospitalCare.Infrastructure.Persistence.Migrations
 
                     b.ToTable("AppointmentTypes", null, t =>
                         {
+                            t.HasCheckConstraint("CK_AppointmentTypes_BookingFee", "[BookingFee] > 0");
+
                             t.HasCheckConstraint("CK_AppointmentTypes_DurationMinutes", "[DurationMinutes] > 0");
                         });
                 });

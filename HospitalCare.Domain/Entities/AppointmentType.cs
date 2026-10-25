@@ -10,6 +10,8 @@ namespace HospitalCare.Domain.Entities
 
         public int DurationMinutes { get; set; }
 
+        public decimal BookingFee { get; set; }
+
         public ICollection<Appointment> Appointments { get; set; } =
             new List<Appointment>();
 

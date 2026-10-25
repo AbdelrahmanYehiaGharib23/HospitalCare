@@ -43,7 +43,7 @@ Appointment     (1) ── (1) PaymentTransaction
 - `Id`, `Name`, `Email`, `Phone`, `DateOfBirth`, `Allergies`, `ChronicConditions`
 
 **AppointmentType** *(new)*
-- `Id`, `Name` (e.g. "Consultation", "Follow-up"), `DurationMinutes`
+- `Id`, `Name` (e.g. "Consultation", "Follow-up"), `DurationMinutes`, `BookingFee` (`decimal(18,2)`, EGP)
 
 **PaymentTransaction** *(new)*
 - `Id`, `PatientId`, `DoctorId`, `AppointmentTypeId`, `RequestedDate`, `Amount`, `Status` (`Pending` / `Succeeded` / `Failed` / `Refunded`), `GatewayReference`, `CreatedAt`
