@@ -5,6 +5,8 @@ using System.Security.Cryptography;
 using System.Text;
 using HospitalCare.API.Tests.Infrastructure;
 using HospitalCare.Application.Authentication;
+using HospitalCare.Application.Common.Constants;
+using HospitalCare.Application.Common.Interfaces;
 using HospitalCare.Application.Common.Models;
 using HospitalCare.Application.Features.Appointments.DTOs;
 using HospitalCare.Application.Features.Payments.DTOs;
@@ -360,6 +362,71 @@ public sealed class AppointmentPaymentsControllerTests
                 cancellationToken));
     }
 
+    [Theory]
+    [InlineData("Doctor")]
+    [InlineData("Department")]
+    public async Task ConfirmPayment_WhenDoctorOrDepartmentBecomesPendingAfterCheckout_RefundsAndDoesNotQueue(
+        string deactivationTarget)
+    {
+        using var factory = new HospitalCareApiFactory();
+        using var client = factory.CreateClient();
+        var cancellationToken = TestContext.Current.CancellationToken;
+        var email = deactivationTarget == "Department"
+            ? "pending-department-payment@example.com"
+            : "pending-doctor-payment@example.com";
+        var token = await RegisterPatientAsync(client, email);
+        var booking = await SeedBookingDataAsync(
+            factory,
+            email,
+            includeQueuedAppointment: true);
+        client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", token);
+
+        using var checkoutResponse = await client.PostAsJsonAsync(
+            "/api/appointments/payments",
+            new
+            {
+                booking.DoctorId,
+                booking.AppointmentTypeId,
+                RequestedDate = booking.Date
+            },
+            cancellationToken);
+        Assert.Equal(HttpStatusCode.OK, checkoutResponse.StatusCode);
+        var checkout = await checkoutResponse.Content
+            .ReadFromJsonAsync<InitiatedAppointmentPaymentDto>(cancellationToken);
+        Assert.NotNull(checkout);
+
+        AuthenticateAsAdmin(factory, client);
+        var deactivatePath = deactivationTarget == "Department"
+            ? $"/api/departments/{booking.DepartmentId}/deactivate"
+            : $"/api/doctors/{booking.DoctorId}/deactivate";
+        using var deactivateResponse = await client.PostAsync(
+            deactivatePath,
+            content: null,
+            cancellationToken);
+        Assert.Equal(HttpStatusCode.OK, deactivateResponse.StatusCode);
+        client.DefaultRequestHeaders.Authorization = null;
+
+        using var webhookResponse = await SendWebhookAsync(
+            client,
+            $"fake-{checkout.PaymentTransactionId}",
+            checkout.Amount,
+            "Succeeded");
+        Assert.Equal(HttpStatusCode.OK, webhookResponse.StatusCode);
+        var webhookResult = await webhookResponse.Content
+            .ReadFromJsonAsync<PaymentWebhookResultDto>(cancellationToken);
+        Assert.NotNull(webhookResult);
+        Assert.Equal(PaymentStatus.Refunded, webhookResult.Status);
+        Assert.Null(webhookResult.AppointmentId);
+        Assert.Equal(1, await CountAppointmentsAsync(factory, cancellationToken));
+        Assert.Equal(
+            PaymentStatus.Refunded,
+            await GetPaymentStatusAsync(
+                factory,
+                checkout.PaymentTransactionId,
+                cancellationToken));
+    }
+
     [Fact]
     public async Task RefundPending_DuplicateWebhookAndCancellation_DoNotRetryProviderRefund()
     {
@@ -456,11 +523,17 @@ public sealed class AppointmentPaymentsControllerTests
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
-    private static async Task<(int DoctorId, int AppointmentTypeId, int PatientId, DateOnly Date)>
+    private static async Task<(
+        int DoctorId,
+        int DepartmentId,
+        int AppointmentTypeId,
+        int PatientId,
+        DateOnly Date)>
         SeedBookingDataAsync(
             HospitalCareApiFactory factory,
             string patientEmail,
-            int? cancelledQueuePosition = null)
+            int? cancelledQueuePosition = null,
+            bool includeQueuedAppointment = false)
     {
         using var scope = factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider
@@ -501,6 +574,12 @@ public sealed class AppointmentPaymentsControllerTests
 
         dbContext.AddRange(doctor, appointmentType);
         await dbContext.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var booking = (
+            DoctorId: doctor.Id,
+            DepartmentId: department.Id,
+            AppointmentTypeId: appointmentType.Id,
+            PatientId: patient.Id,
+            Date: date);
 
         if (cancelledQueuePosition.HasValue)
         {
@@ -513,11 +592,20 @@ public sealed class AppointmentPaymentsControllerTests
                 QueuePosition = cancelledQueuePosition.Value,
                 Status = AppointmentStatus.Cancelled
             });
+        }
+
+        if (includeQueuedAppointment)
+        {
+            dbContext.Appointments.Add(CreateAppointment(booking, 1));
+        }
+
+        if (cancelledQueuePosition.HasValue || includeQueuedAppointment)
+        {
             await dbContext.SaveChangesAsync(
                 TestContext.Current.CancellationToken);
         }
 
-        return (doctor.Id, appointmentType.Id, patient.Id, date);
+        return booking;
     }
 
     private static async Task<string> RegisterPatientAsync(
@@ -543,7 +631,12 @@ public sealed class AppointmentPaymentsControllerTests
     }
 
     private static Appointment CreateAppointment(
-        (int DoctorId, int AppointmentTypeId, int PatientId, DateOnly Date) booking,
+        (
+            int DoctorId,
+            int DepartmentId,
+            int AppointmentTypeId,
+            int PatientId,
+            DateOnly Date) booking,
         int queuePosition)
     {
         return new Appointment
@@ -554,6 +647,21 @@ public sealed class AppointmentPaymentsControllerTests
             AppointmentDate = booking.Date,
             QueuePosition = queuePosition
         };
+    }
+
+    private static void AuthenticateAsAdmin(
+        HospitalCareApiFactory factory,
+        HttpClient client)
+    {
+        using var scope = factory.Services.CreateScope();
+        var tokenService = scope.ServiceProvider
+            .GetRequiredService<IJwtTokenService>();
+        var token = tokenService.GenerateToken(
+            "admin-user",
+            "admin@example.com",
+            [Roles.Admin]);
+        client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", token.Token);
     }
 
     private static async Task<HttpResponseMessage> SendWebhookAsync(
