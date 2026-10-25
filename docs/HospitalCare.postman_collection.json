@@ -1,0 +1,467 @@
+{
+  "info": {
+    "_postman_id": "1b76d716-34f6-48f1-bd61-7841cc306a03",
+    "name": "HospitalCare main booking flow",
+    "description": "Run requests in order against a local Development API configured with the Fake payment provider. The flow creates accounts and a same-day appointment in the configured database.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5074" },
+    { "key": "hospitalTimeZoneId", "value": "Africa/Cairo" },
+    { "key": "adminEmail", "value": "" },
+    { "key": "adminPassword", "value": "" },
+    { "key": "doctorPassword", "value": "" },
+    { "key": "receptionistPassword", "value": "" },
+    { "key": "patientPassword", "value": "" },
+    { "key": "fakeWebhookSecret", "value": "" },
+    { "key": "adminToken", "value": "" },
+    { "key": "doctorToken", "value": "" },
+    { "key": "receptionistToken", "value": "" },
+    { "key": "patientToken", "value": "" },
+    { "key": "departmentId", "value": "" },
+    { "key": "doctorId", "value": "" },
+    { "key": "appointmentTypeId", "value": "" },
+    { "key": "appointmentDate", "value": "" },
+    { "key": "appointmentDayOfWeek", "value": "" },
+    { "key": "appointmentId", "value": "" },
+    { "key": "paymentTransactionId", "value": "" },
+    { "key": "bookingFee", "value": "" },
+    { "key": "departmentName", "value": "" },
+    { "key": "doctorName", "value": "" },
+    { "key": "doctorEmail", "value": "" },
+    { "key": "receptionistEmail", "value": "" },
+    { "key": "patientEmail", "value": "" }
+  ],
+  "event": [
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.test('HTTP response is successful', function () {",
+          "    pm.expect(pm.response.code).to.be.within(200, 299);",
+          "});"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Log in as Admin",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": "{{baseUrl}}/api/auth/login",
+        "auth": { "type": "noauth" }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Admin login succeeds', function () { pm.response.to.have.status(200); });",
+              "pm.collectionVariables.set('adminToken', pm.response.json().token);",
+              "const runId = Date.now().toString();",
+              "pm.collectionVariables.set('departmentName', 'Postman Department ' + runId);",
+              "pm.collectionVariables.set('doctorName', 'Postman Doctor ' + runId);",
+              "pm.collectionVariables.set('doctorEmail', 'doctor-' + runId + '@example.test');",
+              "pm.collectionVariables.set('receptionistEmail', 'receptionist-' + runId + '@example.test');",
+              "pm.collectionVariables.set('patientEmail', 'patient-' + runId + '@example.test');",
+              "const timeZoneId = pm.variables.get('hospitalTimeZoneId') || 'Africa/Cairo';",
+              "const parts = new Intl.DateTimeFormat('en-US', { timeZone: timeZoneId, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date()).reduce((result, part) => { if (part.type !== 'literal') result[part.type] = part.value; return result; }, {});",
+              "const year = Number(parts.year);",
+              "const month = Number(parts.month);",
+              "const day = Number(parts.day);",
+              "pm.collectionVariables.set('appointmentDate', parts.year + '-' + parts.month + '-' + parts.day);",
+              "pm.collectionVariables.set('appointmentDayOfWeek', new Date(Date.UTC(year, month - 1, day)).getUTCDay().toString());"
+            ]
+          }
+        }
+      ],
+      "response": []
+    },
+    {
+      "name": "2. Create Department",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"{{departmentName}}\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": "{{baseUrl}}/api/departments",
+        "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": ["pm.collectionVariables.set('departmentId', pm.response.json().id.toString());"]
+        }
+      }],
+      "response": []
+    },
+    {
+      "name": "3. Create Doctor account",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"{{doctorName}}\",\n  \"email\": \"{{doctorEmail}}\",\n  \"password\": \"{{doctorPassword}}\",\n  \"departmentId\": {{departmentId}}\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": "{{baseUrl}}/api/doctors",
+        "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": ["pm.collectionVariables.set('doctorId', pm.response.json().id.toString());"]
+        }
+      }],
+      "response": []
+    },
+    {
+      "name": "4. Create Receptionist account",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{receptionistEmail}}\",\n  \"password\": \"{{receptionistPassword}}\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": "{{baseUrl}}/api/receptionists",
+        "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] }
+      },
+      "response": []
+    },
+    {
+      "name": "5. Log in as Doctor",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{doctorEmail}}\",\n  \"password\": \"{{doctorPassword}}\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": "{{baseUrl}}/api/auth/login",
+        "auth": { "type": "noauth" }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "pm.test('Doctor login succeeds', function () { pm.response.to.have.status(200); });",
+            "pm.collectionVariables.set('doctorToken', pm.response.json().token);"
+          ]
+        }
+      }],
+      "response": []
+    },
+    {
+      "name": "6. Set Doctor schedule for today",
+      "request": {
+        "method": "PUT",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"ranges\": [\n    {\n      \"dayOfWeek\": {{appointmentDayOfWeek}},\n      \"startTime\": \"00:00:00\",\n      \"endTime\": \"23:59:00\"\n    }\n  ]\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": "{{baseUrl}}/api/doctors/me/schedule",
+        "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{doctorToken}}", "type": "string" }] }
+      },
+      "response": []
+    },
+    {
+      "name": "7. Log in as Receptionist",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{receptionistEmail}}\",\n  \"password\": \"{{receptionistPassword}}\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": "{{baseUrl}}/api/auth/login",
+        "auth": { "type": "noauth" }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "pm.test('Receptionist login succeeds', function () { pm.response.to.have.status(200); });",
+            "pm.collectionVariables.set('receptionistToken', pm.response.json().token);"
+          ]
+        }
+      }],
+      "response": []
+    },
+    {
+      "name": "8. Register Patient",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Postman Test Patient\",\n  \"email\": \"{{patientEmail}}\",\n  \"password\": \"{{patientPassword}}\",\n  \"phone\": \"01000000000\",\n  \"dateOfBirth\": \"1990-01-01\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": "{{baseUrl}}/api/auth/register",
+        "auth": { "type": "noauth" }
+      },
+      "response": []
+    },
+    {
+      "name": "9. Log in as Patient",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{patientEmail}}\",\n  \"password\": \"{{patientPassword}}\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": "{{baseUrl}}/api/auth/login",
+        "auth": { "type": "noauth" }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "pm.test('Patient login succeeds', function () { pm.response.to.have.status(200); });",
+            "pm.collectionVariables.set('patientToken', pm.response.json().token);"
+          ]
+        }
+      }],
+      "response": []
+    },
+    {
+      "name": "10. List appointment types",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/appointment-types",
+        "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{patientToken}}", "type": "string" }] }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "const consultation = pm.response.json().items.find(item => item.name === 'Consultation');",
+            "pm.test('Consultation is available', function () { pm.expect(consultation).to.exist; });",
+            "pm.collectionVariables.set('appointmentTypeId', consultation.id.toString());",
+            "pm.collectionVariables.set('bookingFee', consultation.bookingFee.toString());"
+          ]
+        }
+      }],
+      "response": []
+    },
+    {
+      "name": "11. Check available dates",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/doctors/{{doctorId}}/available-dates?appointmentTypeId={{appointmentTypeId}}&from={{appointmentDate}}&to={{appointmentDate}}",
+        "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{patientToken}}", "type": "string" }] }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "const dates = pm.response.json();",
+            "pm.test('Today has capacity', function () { pm.expect(dates.some(item => item.date === pm.collectionVariables.get('appointmentDate'))).to.be.true; });"
+          ]
+        }
+      }],
+      "response": []
+    },
+    {
+      "name": "12. Initiate appointment payment",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"doctorId\": {{doctorId}},\n  \"appointmentTypeId\": {{appointmentTypeId}},\n  \"requestedDate\": \"{{appointmentDate}}\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": "{{baseUrl}}/api/appointments/payments",
+        "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{patientToken}}", "type": "string" }] }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "const checkout = pm.response.json();",
+            "pm.collectionVariables.set('paymentTransactionId', checkout.paymentTransactionId.toString());",
+            "pm.collectionVariables.set('bookingFee', checkout.amount.toString());"
+          ]
+        }
+      }],
+      "response": []
+    },
+    {
+      "name": "13. Confirm payment with Fake webhook",
+      "event": [{
+        "listen": "prerequest",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "const secret = pm.variables.get('fakeWebhookSecret');",
+            "if (!secret) throw new Error('Set fakeWebhookSecret in the active local Postman environment.');",
+            "const payload = pm.variables.replaceIn(pm.request.body.raw);",
+            "const encoder = new TextEncoder();",
+            "const key = await crypto.subtle.importKey('raw', encoder.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);",
+            "const signature = await crypto.subtle.sign('HMAC', key, encoder.encode(payload));",
+            "const signatureHex = Array.from(new Uint8Array(signature), value => value.toString(16).padStart(2, '0')).join('');",
+            "pm.request.headers.upsert({ key: 'X-Payment-Signature', value: signatureHex });"
+          ]
+        }
+      }, {
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "const result = pm.response.json();",
+            "pm.test('Payment created an appointment', function () { pm.expect(result.appointmentId).to.exist; });",
+            "pm.collectionVariables.set('appointmentId', result.appointmentId.toString());"
+          ]
+        }
+      }],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"gatewayReference\": \"fake-{{paymentTransactionId}}\",\n  \"status\": \"Succeeded\",\n  \"amount\": {{bookingFee}},\n  \"currency\": \"EGP\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": "{{baseUrl}}/api/payments/webhook",
+        "auth": { "type": "noauth" }
+      },
+      "response": []
+    },
+    {
+      "name": "14. Read Patient appointments",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/appointments/me",
+        "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{patientToken}}", "type": "string" }] }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "const appointments = pm.response.json().items;",
+            "pm.test('Patient can read the booked appointment', function () { pm.expect(appointments.some(item => item.id.toString() === pm.collectionVariables.get('appointmentId'))).to.be.true; });"
+          ]
+        }
+      }],
+      "response": []
+    },
+    {
+      "name": "15. Read Doctor queue",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/doctors/me/queue?date={{appointmentDate}}",
+        "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{doctorToken}}", "type": "string" }] }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "const items = pm.response.json().items;",
+            "pm.test('Doctor queue contains the booking', function () { pm.expect(items.some(item => item.appointmentId.toString() === pm.collectionVariables.get('appointmentId'))).to.be.true; });"
+          ]
+        }
+      }],
+      "response": []
+    },
+    {
+      "name": "16. Check in Patient",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": "{{baseUrl}}/api/appointments/{{appointmentId}}/check-in",
+        "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{receptionistToken}}", "type": "string" }] }
+      },
+      "response": []
+    },
+    {
+      "name": "17. Call next Patient",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": "{{baseUrl}}/api/doctors/me/queue/call-next?date={{appointmentDate}}",
+        "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{doctorToken}}", "type": "string" }] }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "pm.test('Called appointment matches the booking', function () { pm.expect(pm.response.json().id.toString()).to.eql(pm.collectionVariables.get('appointmentId')); });"
+          ]
+        }
+      }],
+      "response": []
+    },
+    {
+      "name": "18. Start appointment",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": "{{baseUrl}}/api/appointments/{{appointmentId}}/start",
+        "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{doctorToken}}", "type": "string" }] }
+      },
+      "response": []
+    },
+    {
+      "name": "19. Complete appointment",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"notes\": \"Completed through the Postman booking flow.\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": "{{baseUrl}}/api/appointments/{{appointmentId}}/complete",
+        "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{doctorToken}}", "type": "string" }] }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "const appointment = pm.response.json();",
+            "pm.test('Appointment is completed', function () { pm.expect(appointment.actualStartTime).to.exist; pm.expect(appointment.actualEndTime).to.exist; pm.expect(appointment.notes).to.eql('Completed through the Postman booking flow.'); });"
+          ]
+        }
+      }],
+      "response": []
+    }
+  ]
+}

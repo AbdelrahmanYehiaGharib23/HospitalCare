@@ -169,6 +169,8 @@ The first missed call remains queued and does not increment the skip count until
 
 Sample requests are in `HospitalCare.API/HospitalCare.API.http`. Replace its IDs and bearer tokens with values from the API responses. Use today's hospital-local date for queue actions and calculate the Fake webhook signature from the exact JSON body.
 
+For a scripted Postman run, import `docs/HospitalCare.postman_collection.json` and run its requests in order against a Development database with `PaymentGateway:Provider` set to `Fake`. Set local Postman environment values for `adminEmail`, `adminPassword`, `doctorPassword`, `receptionistPassword`, `patientPassword`, and `fakeWebhookSecret`, and mark them secure. The first two values must match the configured seed Admin; `fakeWebhookSecret` must match `PaymentGateway:Fake:WebhookSecret`. Do not export these values. The collection creates a Department, Doctor, Receptionist, Patient, and Appointment in the configured database. It uses the hospital-local current date because queue calls are limited to that date; run it while at least 30 minutes remain in the day. If `Hospital:TimeZoneId` is overridden, set the collection's `hospitalTimeZoneId` variable to the same time zone.
+
 ## Run
 
 From the repository root:
