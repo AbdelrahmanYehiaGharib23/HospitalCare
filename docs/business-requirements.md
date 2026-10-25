@@ -142,6 +142,7 @@ Appointment     (1) ── (1) PaymentTransaction
 | Cancel Appointment | Yes (any) | No | Yes (any) | Yes (own only) |
 | Start / Complete Appointment | No | Yes (own queue) | No | No |
 | View Doctor Queue | No | Yes (own) | Yes (all) | No |
+| View DoctorSchedule | Yes (any) | Yes (own) | No | Yes (active Doctors) |
 | Manage own DoctorSchedule | No | Yes | No | No |
 | Manage Departments | Yes | No | No | No |
 | Manage Doctors | Yes | No | No | No |

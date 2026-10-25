@@ -9,3 +9,4 @@
 - Patient doctor queries return active Doctors only; Admin can request inactive Doctors explicitly.
 - Receptionist accounts are Identity users without a separate domain profile; the create response contains the email and role.
 - Admin seeding requires both `SeedAdmin:Email` and `SeedAdmin:Password`; an existing non-Admin account is not promoted.
+- DoctorSchedule replacement accepts an empty range set to clear the weekly schedule; patients can read schedules for active Doctors, Doctors can read their own, and Admins can read any.

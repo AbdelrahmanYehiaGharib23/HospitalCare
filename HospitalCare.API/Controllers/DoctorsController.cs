@@ -3,6 +3,9 @@ using HospitalCare.Application.Common.Models;
 using HospitalCare.Application.Features.Doctors.Commands;
 using HospitalCare.Application.Features.Doctors.DTOs;
 using HospitalCare.Application.Features.Doctors.Queries;
+using HospitalCare.Application.Features.DoctorSchedules.Commands;
+using HospitalCare.Application.Features.DoctorSchedules.DTOs;
+using HospitalCare.Application.Features.DoctorSchedules.Queries;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -47,6 +50,29 @@ public sealed class DoctorsController : ControllerBase
     [Authorize(Roles = Roles.Admin)]
     public async Task<ActionResult<DoctorDto>> CreateDoctor(
         [FromBody] CreateDoctorCommand command,
+        CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(command, cancellationToken);
+        return Ok(result);
+    }
+
+    [HttpGet("{id:int}/schedule")]
+    [Authorize(Roles = Roles.Admin + "," + Roles.Doctor + "," + Roles.Patient)]
+    public async Task<ActionResult<IReadOnlyList<DoctorScheduleDto>>> GetDoctorSchedule(
+        int id,
+        CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(
+            new GetDoctorScheduleQuery(id),
+            cancellationToken);
+
+        return Ok(result);
+    }
+
+    [HttpPut("me/schedule")]
+    [Authorize(Roles = Roles.Doctor)]
+    public async Task<ActionResult<IReadOnlyList<DoctorScheduleDto>>> UpdateMySchedule(
+        [FromBody] UpdateDoctorScheduleCommand command,
         CancellationToken cancellationToken)
     {
         var result = await _sender.Send(command, cancellationToken);
