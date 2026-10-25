@@ -5,7 +5,7 @@ namespace HospitalCare.Application.Authentication;
 
 public sealed class RegisterPatientCommandValidator: AbstractValidator<RegisterPatientCommand>
 {
-    public RegisterPatientCommandValidator()
+    public RegisterPatientCommandValidator(TimeProvider timeProvider)
     {
         RuleFor(x => x.Name)
             .NotEmpty()
@@ -23,7 +23,9 @@ public sealed class RegisterPatientCommandValidator: AbstractValidator<RegisterP
             .MaximumLength(30);
 
         RuleFor(x => x.DateOfBirth)
-            .LessThan(DateOnly.FromDateTime(DateTime.UtcNow))
+            .Must(dateOfBirth =>
+                dateOfBirth < DateOnly.FromDateTime(
+                    timeProvider.GetUtcNow().UtcDateTime))
             .WithMessage("Date of birth must be in the past.");
 
         RuleFor(x => x.Allergies)

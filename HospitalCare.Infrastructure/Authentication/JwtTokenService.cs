@@ -12,10 +12,14 @@ namespace HospitalCare.Infrastructure.Authentication;
 public class JwtTokenService : IJwtTokenService
 {
     private readonly JwtOptions _jwtOptions;
+    private readonly TimeProvider _timeProvider;
 
-    public JwtTokenService(IOptions<JwtOptions> jwtOptions)
+    public JwtTokenService(
+        IOptions<JwtOptions> jwtOptions,
+        TimeProvider timeProvider)
     {
         _jwtOptions = jwtOptions.Value;
+        _timeProvider = timeProvider;
     }
 
     public JwtTokenResult GenerateToken(
@@ -25,7 +29,7 @@ public class JwtTokenService : IJwtTokenService
         string? patientId = null,
         string? doctorId = null)
     {
-        var issuedAt = DateTime.UtcNow;
+        var issuedAt = _timeProvider.GetUtcNow().UtcDateTime;
         var expiresAt = issuedAt.AddMinutes(
             _jwtOptions.ExpirationMinutes);
 

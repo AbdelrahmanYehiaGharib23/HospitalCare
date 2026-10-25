@@ -1,5 +1,6 @@
 using HospitalCare.Application.Common.Interfaces;
 using HospitalCare.Infrastructure.Persistence.DbInitializer;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.Sqlite;
@@ -7,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.IdentityModel.Tokens;
 using Serilog;
 
 namespace HospitalCare.API.Tests.Infrastructure;
@@ -62,6 +64,21 @@ internal class HospitalCareApiFactory : WebApplicationFactory<Program>
             {
                 services.RemoveAll<TimeProvider>();
                 services.AddSingleton<TimeProvider>(_timeProvider);
+                services.Configure<JwtBearerOptions>(
+                    JwtBearerDefaults.AuthenticationScheme,
+                    options => options.TokenValidationParameters.LifetimeValidator =
+                        (notBefore, expires, _, validationParameters) =>
+                        {
+                            var now = _timeProvider.GetUtcNow().UtcDateTime;
+                            var clockSkew = validationParameters.ClockSkew;
+
+                            return (!validationParameters.RequireExpirationTime ||
+                                    expires.HasValue) &&
+                                   (!notBefore.HasValue ||
+                                    notBefore.Value <= now + clockSkew) &&
+                                   (!expires.HasValue ||
+                                    expires.Value >= now - clockSkew);
+                        });
             }
         });
     }

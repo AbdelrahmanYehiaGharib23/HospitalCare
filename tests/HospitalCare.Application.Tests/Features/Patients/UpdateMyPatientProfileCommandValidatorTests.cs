@@ -4,7 +4,15 @@ namespace HospitalCare.Application.Tests.Features.Patients;
 
 public sealed class UpdateMyPatientProfileCommandValidatorTests
 {
-    private readonly UpdateMyPatientProfileCommandValidator _validator = new();
+    private readonly UpdateMyPatientProfileCommandValidator _validator = new(
+        new FixedTimeProvider(new DateTimeOffset(
+            2030,
+            3,
+            1,
+            0,
+            0,
+            0,
+            TimeSpan.Zero)));
 
     [Fact]
     public void Validate_ValidProfile_Succeeds()
@@ -32,6 +40,15 @@ public sealed class UpdateMyPatientProfileCommandValidatorTests
         Assert.False(result.IsValid);
     }
 
+    [Fact]
+    public void Validate_TodayDateOfBirth_Fails()
+    {
+        var result = _validator.Validate(
+            CreateCommand() with { DateOfBirth = new DateOnly(2030, 3, 1) });
+
+        Assert.False(result.IsValid);
+    }
+
     private static UpdateMyPatientProfileCommand CreateCommand()
     {
         return new UpdateMyPatientProfileCommand(
@@ -40,5 +57,11 @@ public sealed class UpdateMyPatientProfileCommandValidatorTests
             new DateOnly(1990, 1, 1),
             null,
             null);
+    }
+
+    private sealed class FixedTimeProvider(DateTimeOffset utcNow)
+        : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => utcNow;
     }
 }
