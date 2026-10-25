@@ -75,13 +75,25 @@ public sealed class DoctorsController : ControllerBase
     }
 
     [HttpGet("{id:int}/schedule")]
-    [Authorize(Roles = Roles.Admin + "," + Roles.Doctor + "," + Roles.Patient)]
+    [Authorize(Roles = Roles.Admin + "," + Roles.Patient)]
     public async Task<ActionResult<IReadOnlyList<DoctorScheduleDto>>> GetDoctorSchedule(
         int id,
         CancellationToken cancellationToken)
     {
         var result = await _sender.Send(
             new GetDoctorScheduleQuery(id),
+            cancellationToken);
+
+        return Ok(result);
+    }
+
+    [HttpGet("me/schedule")]
+    [Authorize(Roles = Roles.Doctor)]
+    public async Task<ActionResult<IReadOnlyList<DoctorScheduleDto>>> GetMyDoctorSchedule(
+        CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(
+            new GetDoctorScheduleQuery(null),
             cancellationToken);
 
         return Ok(result);
@@ -108,7 +120,7 @@ public sealed class DoctorsController : ControllerBase
     }
 
     [HttpGet("{id:int}/queue")]
-    [Authorize(Roles = Roles.Doctor + "," + Roles.Receptionist)]
+    [Authorize(Roles = Roles.Receptionist)]
     public async Task<ActionResult<PagedResult<DoctorQueueItemDto>>> GetQueueForDate(
         int id,
         [FromQuery, BindRequired] DateOnly date,
@@ -119,6 +131,25 @@ public sealed class DoctorsController : ControllerBase
         var result = await _sender.Send(
             new GetDoctorQueueForDateQuery(
                 id,
+                date,
+                pageNumber,
+                pageSize),
+            cancellationToken);
+
+        return Ok(result);
+    }
+
+    [HttpGet("me/queue")]
+    [Authorize(Roles = Roles.Doctor)]
+    public async Task<ActionResult<PagedResult<DoctorQueueItemDto>>> GetMyQueueForDate(
+        [FromQuery, BindRequired] DateOnly date,
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await _sender.Send(
+            new GetDoctorQueueForDateQuery(
+                null,
                 date,
                 pageNumber,
                 pageSize),

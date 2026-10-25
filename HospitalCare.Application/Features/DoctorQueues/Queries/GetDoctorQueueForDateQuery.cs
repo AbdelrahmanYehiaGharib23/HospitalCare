@@ -5,7 +5,7 @@ using MediatR;
 namespace HospitalCare.Application.Features.DoctorQueues.Queries;
 
 public sealed record GetDoctorQueueForDateQuery(
-    int DoctorId,
+    int? DoctorId,
     DateOnly Date,
     int PageNumber = 1,
     int PageSize = 20)

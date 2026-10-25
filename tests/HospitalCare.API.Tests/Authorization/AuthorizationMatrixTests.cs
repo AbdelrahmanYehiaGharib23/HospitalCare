@@ -132,8 +132,12 @@ public sealed class AuthorizationMatrixTests
                 "/api/doctors/1/schedule",
                 null,
                 Roles.Admin,
-                Roles.Doctor,
                 Roles.Patient),
+            new(
+                HttpMethod.Get,
+                "/api/doctors/me/schedule",
+                null,
+                Roles.Doctor),
             new(
                 HttpMethod.Get,
                 "/api/doctors/1/available-dates?appointmentTypeId=1&from=2030-01-01&to=2030-01-01",
@@ -143,8 +147,12 @@ public sealed class AuthorizationMatrixTests
                 HttpMethod.Get,
                 "/api/doctors/1/queue?date=2030-01-01",
                 null,
-                Roles.Doctor,
                 Roles.Receptionist),
+            new(
+                HttpMethod.Get,
+                "/api/doctors/me/queue?date=2030-01-01",
+                null,
+                Roles.Doctor),
             new(
                 HttpMethod.Post,
                 "/api/doctors/me/queue/call-next?date=2030-01-01",

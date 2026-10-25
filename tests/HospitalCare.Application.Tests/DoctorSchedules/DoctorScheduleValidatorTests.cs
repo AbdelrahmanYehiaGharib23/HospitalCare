@@ -93,4 +93,14 @@ public sealed class DoctorScheduleValidatorTests
 
         Assert.False(result.IsValid);
     }
+
+    [Fact]
+    public void GetDoctorScheduleQuery_ClaimBasedRequest_Passes()
+    {
+        var validator = new GetDoctorScheduleQueryValidator();
+
+        var result = validator.Validate(new GetDoctorScheduleQuery(null));
+
+        Assert.True(result.IsValid);
+    }
 }

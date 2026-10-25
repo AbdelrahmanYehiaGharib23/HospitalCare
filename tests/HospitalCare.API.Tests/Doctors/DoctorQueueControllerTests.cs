@@ -31,7 +31,7 @@ public sealed class DoctorQueueControllerTests
             new AuthenticationHeaderValue("Bearer", token);
 
         using var response = await client.GetAsync(
-            $"/api/doctors/{queue.DoctorId}/queue?date={queue.Date:yyyy-MM-dd}",
+            $"/api/doctors/me/queue?date={queue.Date:yyyy-MM-dd}&doctorId={queue.DoctorId + 1}",
             cancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -48,7 +48,7 @@ public sealed class DoctorQueueControllerTests
     }
 
     [Fact]
-    public async Task GetQueueForDate_DoctorRequestsAnotherQueue_ReturnsForbidden()
+    public async Task GetQueueForDate_DoctorCannotUseIdRoute_ReturnsForbidden()
     {
         using var factory = new HospitalCareApiFactory();
         using var client = factory.CreateClient();
@@ -59,7 +59,7 @@ public sealed class DoctorQueueControllerTests
         client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue(
                 "Bearer",
-                CreateDoctorToken(factory, queue.DoctorId + 1));
+                CreateDoctorToken(factory, queue.DoctorId));
 
         using var response = await client.GetAsync(
             $"/api/doctors/{queue.DoctorId}/queue?date={queue.Date:yyyy-MM-dd}",

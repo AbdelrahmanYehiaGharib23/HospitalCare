@@ -67,7 +67,12 @@ X-Payment-Signature: {{FakeWebhookSignature}}
 }
 
 ### Read the Doctor's queue
-GET {{HospitalCare.API_HostAddress}}/api/doctors/{{DoctorId}}/queue?date={{AppointmentDate}}
+GET {{HospitalCare.API_HostAddress}}/api/doctors/me/queue?date={{AppointmentDate}}
+Accept: application/json
+Authorization: Bearer {{DoctorToken}}
+
+### Read the Doctor's schedule
+GET {{HospitalCare.API_HostAddress}}/api/doctors/me/schedule
 Accept: application/json
 Authorization: Bearer {{DoctorToken}}
 

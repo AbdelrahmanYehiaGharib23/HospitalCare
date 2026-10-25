@@ -39,10 +39,10 @@ public sealed class GetDoctorQueueForDateQueryHandler
         GetDoctorQueueForDateQuery request,
         CancellationToken cancellationToken)
     {
-        EnsureCanViewQueue(request.DoctorId);
+        var doctorId = GetDoctorId(request.DoctorId);
 
         var doctors = await _unitOfWork.Doctors.FindAsync(
-            doctor => doctor.Id == request.DoctorId,
+            doctor => doctor.Id == doctorId,
             withTracking: false,
             cancellationToken);
         if (!doctors.Any())
@@ -52,7 +52,7 @@ public sealed class GetDoctorQueueForDateQueryHandler
 
         var appointments = (await _unitOfWork.Appointments.FindAsync(
             appointment =>
-                appointment.DoctorId == request.DoctorId &&
+                appointment.DoctorId == doctorId &&
                 appointment.AppointmentDate == request.Date &&
                 (appointment.Status == AppointmentStatus.Completed ||
                     appointment.Status == AppointmentStatus.Queued ||
@@ -69,7 +69,7 @@ public sealed class GetDoctorQueueForDateQueryHandler
             _hospitalTimeZone);
         var schedules = (await _unitOfWork.DoctorSchedules.FindAsync(
             schedule =>
-                schedule.DoctorId == request.DoctorId &&
+                schedule.DoctorId == doctorId &&
                 schedule.DayOfWeek == request.Date.DayOfWeek,
             withTracking: false,
             cancellationToken))
@@ -119,25 +119,23 @@ public sealed class GetDoctorQueueForDateQueryHandler
             queue.Length);
     }
 
-    private void EnsureCanViewQueue(int doctorId)
+    private int GetDoctorId(int? requestedDoctorId)
     {
-        if (_currentUserService.IsInRole(Roles.Receptionist))
+        if (requestedDoctorId.HasValue &&
+            _currentUserService.IsInRole(Roles.Receptionist))
         {
-            return;
+            return requestedDoctorId.Value;
         }
 
-        if (!_currentUserService.IsInRole(Roles.Doctor) ||
+        if (requestedDoctorId.HasValue ||
+            !_currentUserService.IsInRole(Roles.Doctor) ||
             !int.TryParse(_currentUserService.DoctorId, out var currentDoctorId))
         {
             throw new ForbiddenException(
-                "The current user cannot view Doctor queues.");
+                "The current user cannot view this Doctor queue.");
         }
 
-        if (currentDoctorId != doctorId)
-        {
-            throw new ForbiddenException(
-                "Doctors can only view their own queue.");
-        }
+        return currentDoctorId;
     }
 
     private async Task<Dictionary<int, AppointmentType>> GetAppointmentTypesAsync(

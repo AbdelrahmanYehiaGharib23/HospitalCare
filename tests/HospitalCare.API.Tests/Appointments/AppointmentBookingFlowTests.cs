@@ -104,7 +104,7 @@ public sealed class AppointmentBookingFlowTests
 
         Authenticate(factory, client, Roles.Doctor, booking.DoctorId);
         using var queueResponse = await client.GetAsync(
-            $"/api/doctors/{booking.DoctorId}/queue?date={booking.Date:yyyy-MM-dd}",
+            $"/api/doctors/me/queue?date={booking.Date:yyyy-MM-dd}",
             cancellationToken);
         Assert.Equal(HttpStatusCode.OK, queueResponse.StatusCode);
         var queue = await queueResponse.Content

@@ -27,32 +27,14 @@ public sealed class GetDoctorScheduleQueryHandler
         var isAdmin = _currentUserService.IsInRole(Roles.Admin);
         var isDoctor = _currentUserService.IsInRole(Roles.Doctor);
         var isPatient = _currentUserService.IsInRole(Roles.Patient);
-
-        if (!isAdmin && !isDoctor && !isPatient)
-        {
-            throw new ForbiddenException(
-                "The current user cannot view Doctor schedules.");
-        }
-
-        if (isDoctor && !isAdmin)
-        {
-            if (!int.TryParse(
-                    _currentUserService.DoctorId,
-                    out var currentDoctorId))
-            {
-                throw new ForbiddenException(
-                    "The authenticated Doctor profile was not found.");
-            }
-
-            if (currentDoctorId != request.DoctorId)
-            {
-                throw new ForbiddenException(
-                    "Doctors can only view their own schedule.");
-            }
-        }
+        var doctorId = GetDoctorId(
+            request.DoctorId,
+            isAdmin,
+            isDoctor,
+            isPatient);
 
         var doctors = await _unitOfWork.Doctors.FindAsync(
-            doctor => doctor.Id == request.DoctorId,
+            doctor => doctor.Id == doctorId,
             withTracking: false,
             cancellationToken);
         var doctor = doctors.SingleOrDefault();
@@ -64,7 +46,7 @@ public sealed class GetDoctorScheduleQueryHandler
         }
 
         var schedules = await _unitOfWork.DoctorSchedules.FindAsync(
-            schedule => schedule.DoctorId == request.DoctorId,
+            schedule => schedule.DoctorId == doctorId,
             withTracking: false,
             cancellationToken);
 
@@ -73,5 +55,32 @@ public sealed class GetDoctorScheduleQueryHandler
             .ThenBy(schedule => schedule.StartTime)
             .Select(DoctorScheduleDto.FromEntity)
             .ToArray();
+    }
+
+    private int GetDoctorId(
+        int? requestedDoctorId,
+        bool isAdmin,
+        bool isDoctor,
+        bool isPatient)
+    {
+        if (requestedDoctorId.HasValue)
+        {
+            if (isAdmin || isPatient)
+            {
+                return requestedDoctorId.Value;
+            }
+
+            throw new ForbiddenException(
+                "Only Admins and Patients can request a Doctor ID.");
+        }
+
+        if (!isDoctor ||
+            !int.TryParse(_currentUserService.DoctorId, out var doctorId))
+        {
+            throw new ForbiddenException(
+                "The current Doctor profile was not found.");
+        }
+
+        return doctorId;
     }
 }

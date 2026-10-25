@@ -10,7 +10,7 @@ public sealed class GetDoctorQueueForDateQueryValidator
     public GetDoctorQueueForDateQueryValidator()
     {
         RuleFor(query => query.DoctorId)
-            .GreaterThan(0);
+            .Must(doctorId => !doctorId.HasValue || doctorId.Value > 0);
 
         RuleFor(query => query.Date)
             .NotEqual(default(DateOnly));

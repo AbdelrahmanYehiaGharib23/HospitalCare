@@ -202,7 +202,7 @@ public sealed class DoctorSchedulesControllerTests
     }
 
     [Fact]
-    public async Task GetDoctorSchedule_DoctorCanReadOwnScheduleOnly()
+    public async Task GetMyDoctorSchedule_UsesClaimAndRejectsDoctorIdRoute()
     {
         using var factory = new HospitalCareApiFactory();
         using var client = factory.CreateClient();
@@ -217,14 +217,18 @@ public sealed class DoctorSchedulesControllerTests
         AuthenticateDoctor(factory, client, ownDoctorId);
 
         using var ownResponse = await client.GetAsync(
-            $"/api/doctors/{ownDoctorId}/schedule",
+            "/api/doctors/me/schedule",
             TestContext.Current.CancellationToken);
         using var otherResponse = await client.GetAsync(
             $"/api/doctors/{otherDoctorId}/schedule",
             TestContext.Current.CancellationToken);
+        using var ownIdResponse = await client.GetAsync(
+            $"/api/doctors/{ownDoctorId}/schedule",
+            TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, ownResponse.StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, otherResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, ownIdResponse.StatusCode);
     }
 
     [Fact]

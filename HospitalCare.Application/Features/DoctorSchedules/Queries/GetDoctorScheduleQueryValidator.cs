@@ -8,6 +8,6 @@ public sealed class GetDoctorScheduleQueryValidator
     public GetDoctorScheduleQueryValidator()
     {
         RuleFor(query => query.DoctorId)
-            .GreaterThan(0);
+            .Must(doctorId => !doctorId.HasValue || doctorId.Value > 0);
     }
 }

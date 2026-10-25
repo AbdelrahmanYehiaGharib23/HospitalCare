@@ -109,9 +109,11 @@ All routes are under `/api`. Requests that require authentication use a JWT bear
 | `POST /departments`, `PUT /departments/{id}`, `POST /departments/{id}/deactivate` | Admin | Create, rename, or gracefully deactivate a Department. |
 | `GET /doctors`, `GET /doctors/{id}` | Admin, Patient | List or read Doctors; Patients see active Doctors. |
 | `POST /doctors`, `POST /doctors/{id}/deactivate` | Admin | Create a Doctor account or gracefully deactivate a Doctor. |
-| `GET /doctors/{id}/schedule` | Admin, Doctor, Patient | Read a schedule; Doctors can read their own, Patients active Doctors, and Admins any Doctor. |
+| `GET /doctors/{id}/schedule` | Admin, Patient | Read a schedule; Patients can read active Doctors and Admins any Doctor. |
+| `GET /doctors/me/schedule` | Doctor | Read the current Doctor's schedule. |
 | `GET /doctors/{id}/available-dates` | Patient | Get dates with capacity for an appointment type and inclusive date range. |
-| `GET /doctors/{id}/queue` | Doctor, Receptionist | Read a paginated queue; Doctors can read their own queue. |
+| `GET /doctors/{id}/queue` | Receptionist | Read any Doctor's paginated queue. |
+| `GET /doctors/me/queue` | Doctor | Read the current Doctor's paginated queue. |
 | `POST /doctors/me/queue/call-next` | Doctor | Call the next checked-in Patient in the Doctor's queue for today. |
 | `POST /doctors/{id}/queue/call-next` | Receptionist | Call the next checked-in Patient for a Doctor today. |
 | `PUT /doctors/me/schedule` | Doctor | Replace the current Doctor's weekly schedule. |
