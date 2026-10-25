@@ -1,4 +1,5 @@
-﻿using HospitalCare.Application.Common.Exceptions;
+﻿using HospitalCare.Application.Common.Constants;
+using HospitalCare.Application.Common.Exceptions;
 using HospitalCare.Application.Common.Interfaces;
 using HospitalCare.Application.Common.Models;
 using HospitalCare.Domain.Entities;
@@ -10,8 +11,6 @@ namespace HospitalCare.Infrastructure.Identity;
 
 public class IdentityService : IIdentityService
 {
-    private const string PatientRole = "Patient";
-
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly RoleManager<IdentityRole> _roleManager;
     private readonly IJwtTokenService _jwtTokenService;
@@ -63,10 +62,10 @@ public class IdentityService : IIdentityService
                     FormatIdentityErrors(createResult.Errors));
             }
 
-            if (!await _roleManager.RoleExistsAsync(PatientRole))
+            if (!await _roleManager.RoleExistsAsync(Roles.Patient))
             {
                 var roleResult = await _roleManager.CreateAsync(
-                    new IdentityRole(PatientRole));
+                    new IdentityRole(Roles.Patient));
 
                 if (!roleResult.Succeeded)
                 {
@@ -76,7 +75,7 @@ public class IdentityService : IIdentityService
             }
 
             var roleAssignmentResult =
-                await _userManager.AddToRoleAsync(user, PatientRole);
+                await _userManager.AddToRoleAsync(user, Roles.Patient);
 
             if (!roleAssignmentResult.Succeeded)
             {
@@ -139,7 +138,7 @@ public class IdentityService : IIdentityService
 
         string? patientId = null;
 
-        if (roles.Contains("Patient"))
+        if (roles.Contains(Roles.Patient))
         {
             var patients = await _unitOfWork.Patients.FindAsync(
                 patient => patient.UserId == user.Id,

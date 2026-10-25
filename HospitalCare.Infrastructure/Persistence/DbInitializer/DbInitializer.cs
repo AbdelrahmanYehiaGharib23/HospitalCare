@@ -1,4 +1,5 @@
-﻿using HospitalCare.Application.Common.Interfaces;
+﻿using HospitalCare.Application.Common.Constants;
+using HospitalCare.Application.Common.Interfaces;
 using HospitalCare.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -9,10 +10,10 @@ public class DbInitializer : IDbInitializer
 {
     private static readonly string[] RequiredRoles =
     [
-        "Admin",
-        "Doctor",
-        "Receptionist",
-        "Patient"
+        Roles.Admin,
+        Roles.Doctor,
+        Roles.Receptionist,
+        Roles.Patient
     ];
 
     private readonly ApplicationDbContext _dbContext;

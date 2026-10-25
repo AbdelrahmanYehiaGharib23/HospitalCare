@@ -1,4 +1,5 @@
-﻿using HospitalCare.Application.Features.Patients.Commands;
+﻿using HospitalCare.Application.Common.Constants;
+using HospitalCare.Application.Features.Patients.Commands;
 using HospitalCare.Application.Features.Patients.DTOs;
 using HospitalCare.Application.Features.Patients.Queries.GetMyPatientProfile;
 using MediatR;
@@ -9,7 +10,7 @@ namespace HospitalCare.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = "Patient")]
+[Authorize(Roles = Roles.Patient)]
 public sealed class PatientsController : ControllerBase
 {
     private readonly ISender _sender;
