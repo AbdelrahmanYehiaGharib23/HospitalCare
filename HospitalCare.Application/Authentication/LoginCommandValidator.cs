@@ -1,6 +1,6 @@
 ﻿using FluentValidation;
 
-namespace HospitalCare.Application.Features.Patients.Authentication;
+namespace HospitalCare.Application.Authentication;
 
 public sealed class LoginCommandValidator
     : AbstractValidator<LoginCommand>

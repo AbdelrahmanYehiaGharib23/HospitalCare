@@ -1,4 +1,4 @@
-﻿using HospitalCare.Application.Features.Patients.Authentication;
+﻿using HospitalCare.Application.Features.Patients.Commands;
 using HospitalCare.Application.Features.Patients.DTOs;
 using HospitalCare.Application.Features.Patients.Queries.GetMyPatientProfile;
 using MediatR;

@@ -1,6 +1,6 @@
 ﻿using FluentValidation;
 
-namespace HospitalCare.Application.Features.Patients.Authentication;
+namespace HospitalCare.Application.Features.Patients.Commands;
 
 public sealed class UpdateMyPatientProfileCommandValidator
     : AbstractValidator<UpdateMyPatientProfileCommand>

@@ -1,5 +1,5 @@
 ﻿using FluentValidation;
-using HospitalCare.Application.Features.Patients.Authentication;
+using HospitalCare.Application.Authentication;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 

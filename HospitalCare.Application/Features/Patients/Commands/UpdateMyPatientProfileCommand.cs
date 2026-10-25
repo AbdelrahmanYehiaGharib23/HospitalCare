@@ -1,7 +1,7 @@
 ﻿using HospitalCare.Application.Features.Patients.DTOs;
 using MediatR;
 
-namespace HospitalCare.Application.Features.Patients.Authentication;
+namespace HospitalCare.Application.Features.Patients.Commands;
 
 public sealed record UpdateMyPatientProfileCommand(
     string Name,
