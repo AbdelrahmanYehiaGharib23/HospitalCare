@@ -18,6 +18,19 @@ For a beginner-friendly walkthrough in Arabic, see [the project guide](docs/proj
 - `HospitalCare.Infrastructure` implements persistence, identity, and external service integrations.
 - `HospitalCare.API` hosts the HTTP API and wires the application and infrastructure layers together.
 
+## Architecture
+
+![HospitalCare architecture diagram](docs/architecture/hospitalcare-architecture-dark.svg)
+
+The diagram follows the Clean Architecture layers (API, Application with MediatR, Domain, Infrastructure) and the request flow from the client to SQL Server. Every part is marked as implemented (✓) or partial (◐).
+
+**[Open the interactive diagram](https://abdelrahmanyehiagharib23.github.io/HospitalCare/architecture/)**: click any node, line, or layer to see what it is, why it matters, and its current status (the explanations are in Arabic). To open it locally, open `docs/architecture/index.html` in a browser.
+
+| Status | Parts |
+|---|---|
+| Implemented | Error handler, JWT and roles, all API controllers, all MediatR handlers, capacity and queue services, UnitOfWork, DbContext, SQL Server |
+| Partial | Payment gateway: the Fake provider is the default, and the Paymob adapter was only checked by creating a test Intention (no payment was completed). `NoShowProcessor`: the background service and domain rules exist, but the check-in conditions used by call-next and no-show detection still need to be aligned before a swap can trigger end to end. |
+
 ## Requirements
 
 - .NET 10 SDK
