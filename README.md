@@ -20,11 +20,11 @@ For a beginner-friendly walkthrough in Arabic, see [the project guide](docs/proj
 
 ## Architecture
 
-![HospitalCare architecture diagram](docs/architecture/hospitalcare-architecture-dark.svg)
+![HospitalCare architecture diagram](docs/architecture/hospitalcare-architecture.svg)
 
-The diagram follows the Clean Architecture layers (API, Application with MediatR, Domain, Infrastructure) and the request flow from the client to SQL Server. Every part is marked as implemented (✓) or partial (◐).
+The animated diagram follows the Clean Architecture layers (API, Application with MediatR, Domain, Infrastructure). The blue dots trace a booking request from the client to SQL Server, and the green dots trace the payment callback loop with Paymob. Every part is marked as implemented (✓) or partial (◐).
 
-**[Open the interactive diagram](https://abdelrahmanyehiagharib23.github.io/HospitalCare/architecture/)**: click any node, line, or layer to see what it is, why it matters, and its current status (the explanations are in Arabic). To open it locally, open `docs/architecture/index.html` in a browser.
+**[Open the interactive diagram](https://abdelrahmanyehiagharib23.github.io/HospitalCare/architecture/)**: click any node, line, or layer to see what it is, why it matters, and its current status. To open it locally, open `docs/architecture/index.html` in a browser.
 
 | Status | Parts |
 |---|---|
