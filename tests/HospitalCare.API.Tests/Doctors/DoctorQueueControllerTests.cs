@@ -44,38 +44,7 @@ public sealed class DoctorQueueControllerTests
         var item = Assert.Single(result.Items);
         Assert.Equal(queue.QueuedAppointmentId, item.AppointmentId);
         Assert.Equal(3, item.QueuePosition);
-        using var scope = factory.Services.CreateScope();
-        var dbContext = scope.ServiceProvider
-            .GetRequiredService<ApplicationDbContext>();
-        var completedAppointment = await dbContext.Appointments.SingleAsync(
-            appointment =>
-                appointment.DoctorId == queue.DoctorId &&
-                appointment.Status == AppointmentStatus.Completed,
-            cancellationToken);
-        var appointmentType = await dbContext.AppointmentTypes.SingleAsync(
-            appointmentType =>
-                appointmentType.Id == completedAppointment.AppointmentTypeId,
-            cancellationToken);
-        var schedule = await dbContext.DoctorSchedules.SingleAsync(
-            schedule =>
-                schedule.DoctorId == queue.DoctorId &&
-                schedule.DayOfWeek == queue.Date.DayOfWeek,
-            cancellationToken);
-        var timeZone = scope.ServiceProvider.GetRequiredService<TimeZoneInfo>();
-        var scheduleStartUtc = TimeZoneInfo.ConvertTimeToUtc(
-            queue.Date.ToDateTime(schedule.StartTime),
-            timeZone);
-        var diagnostic =
-            $"Queue date={queue.Date:O}; time zone={timeZone.Id}; " +
-            $"schedule={schedule.StartTime:HH:mm}; duration={appointmentType.DurationMinutes}; " +
-            $"schedule start UTC={scheduleStartUtc:O}; " +
-            $"completed start={completedAppointment.ActualStartTime:O} " +
-            $"({completedAppointment.ActualStartTime?.Kind}); " +
-            $"completed end={completedAppointment.ActualEndTime:O} " +
-            $"({completedAppointment.ActualEndTime?.Kind}); " +
-            $"estimated start={item.EstimatedStartTime:O}; " +
-            $"estimated delay={item.EstimatedDelayMinutes}.";
-        Assert.True(item.EstimatedDelayMinutes == 1, diagnostic);
+        Assert.Equal(1, item.EstimatedDelayMinutes);
         Assert.Equal(9, item.EstimatedStartTime?.Hour);
         Assert.Equal(31, item.EstimatedStartTime?.Minute);
     }

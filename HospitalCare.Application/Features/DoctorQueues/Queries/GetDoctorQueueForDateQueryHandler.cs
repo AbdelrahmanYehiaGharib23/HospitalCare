@@ -190,7 +190,7 @@ public sealed class GetDoctorQueueForDateQueryHandler
             localScheduleStart,
             _hospitalTimeZone);
         var scheduleStart = TimeZoneInfo.ConvertTime(
-            scheduleStartUtc,
+            new DateTimeOffset(scheduleStartUtc),
             _hospitalTimeZone);
         var estimatorAppointments = appointments
             .Select(appointment => new QueueEstimatorAppointment(
