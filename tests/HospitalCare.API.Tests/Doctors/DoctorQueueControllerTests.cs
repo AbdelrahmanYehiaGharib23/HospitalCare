@@ -20,7 +20,9 @@ public sealed class DoctorQueueControllerTests
     [Fact]
     public async Task GetQueueForDate_DoctorOwnsQueue_ReturnsEstimates()
     {
-        using var factory = new HospitalCareApiFactory();
+        using var factory = new HospitalCareApiFactory(
+            new FixedTimeProvider(
+                new DateTimeOffset(2030, 1, 10, 5, 0, 0, TimeSpan.Zero)));
         using var client = factory.CreateClient();
         var cancellationToken = TestContext.Current.CancellationToken;
         const string patientEmail = "queue-patient@example.com";
@@ -185,4 +187,10 @@ public sealed class DoctorQueueControllerTests
         int DoctorId,
         DateOnly Date,
         int QueuedAppointmentId);
+
+    private sealed class FixedTimeProvider(DateTimeOffset utcNow)
+        : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => utcNow;
+    }
 }
