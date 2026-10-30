@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    name: Build and test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 10 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Restore
+        run: dotnet restore HospitalCare.slnx
+
+      - name: Build
+        run: dotnet build HospitalCare.slnx -c Release --no-restore
+
+      - name: Test API project (MTP TRX report)
+        env:
+          PaymentGateway__Provider: Fake
+        run: dotnet test tests/HospitalCare.API.Tests/HospitalCare.API.Tests.csproj -c Release --no-build --results-directory tests/HospitalCare.API.Tests/TestResults --report-xunit-trx --report-xunit-trx-filename api-tests.trx
+
+      - name: Test Application project (MTP TRX report)
+        if: always()
+        env:
+          PaymentGateway__Provider: Fake
+        run: dotnet test tests/HospitalCare.Application.Tests/HospitalCare.Application.Tests.csproj -c Release --no-build --results-directory tests/HospitalCare.Application.Tests/TestResults --report-xunit-trx --report-xunit-trx-filename application-tests.trx
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: "tests/**/TestResults/*.trx"
+          if-no-files-found: warn
+
+  docker:
+    name: Build Docker image
+    needs: build-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build image (no push)
+        run: docker build -t hospitalcare-api .

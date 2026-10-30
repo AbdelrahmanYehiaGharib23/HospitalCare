@@ -1,0 +1,53 @@
+services:
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: Developer
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:?Set MSSQL_SA_PASSWORD in .env}
+    ports:
+      - "${SQLSERVER_PORT:-1433}:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$${MSSQL_SA_PASSWORD}\" -C -Q \"SELECT 1\" || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: "Server=db,1433;Database=${SQLSERVER_DATABASE:-HospitalCare};User Id=sa;Password=${MSSQL_SA_PASSWORD:?Set MSSQL_SA_PASSWORD in .env};Encrypt=True;TrustServerCertificate=True"
+      Jwt__SecretKey: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      Jwt__Issuer: ${JWT_ISSUER:?Set JWT_ISSUER in .env}
+      Jwt__Audience: ${JWT_AUDIENCE:?Set JWT_AUDIENCE in .env}
+      Jwt__ExpirationMinutes: ${JWT_EXPIRATION_MINUTES:-30}
+      SeedAdmin__Email: ${SEED_ADMIN_EMAIL:-}
+      SeedAdmin__Password: ${SEED_ADMIN_PASSWORD:-}
+      PaymentGateway__Provider: ${PAYMENT_GATEWAY_PROVIDER:-Fake}
+      PaymentGateway__Fake__WebhookSecret: ${FAKE_PAYMENT_WEBHOOK_SECRET:?Set FAKE_PAYMENT_WEBHOOK_SECRET in .env}
+      PaymentGateway__Fake__CheckoutBaseUrl: ${FAKE_PAYMENT_CHECKOUT_BASE_URL:-https://fake-payment.invalid/checkout/}
+      Paymob__BaseUrl: ${PAYMOB_BASE_URL:-https://accept.paymob.com}
+      Paymob__SecretKey: ${PAYMOB_SECRET_KEY:-}
+      Paymob__PublicKey: ${PAYMOB_PUBLIC_KEY:-}
+      Paymob__HmacSecret: ${PAYMOB_HMAC_SECRET:-}
+      Paymob__IntegrationId: ${PAYMOB_INTEGRATION_ID:-0}
+      Paymob__Currency: ${PAYMOB_CURRENCY:-EGP}
+      Paymob__NotificationUrl: ${PAYMOB_NOTIFICATION_URL:-https://example.test/api/payments/paymob/webhook}
+      Paymob__RedirectUrl: ${PAYMOB_REDIRECT_URL:-}
+      Hospital__TimeZoneId: ${HOSPITAL_TIME_ZONE_ID:-Africa/Cairo}
+      Serilog__FilePath: ${SERILOG_FILE_PATH:-logs/hospitalcare-.log}
+    ports:
+      - "8080:8080"
+
+volumes:
+  sqlserver-data:

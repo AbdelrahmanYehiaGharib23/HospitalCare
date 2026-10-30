@@ -11,3 +11,6 @@ packages/
 appsettings.Development.json
 .DS_Store
 Thumbs.db
+*.publishSettings
+TestResults/
+logs/

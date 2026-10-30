@@ -1,0 +1,13 @@
+**/bin/
+**/obj/
+.git/
+.vs/
+.env
+*.publishSettings
+**/appsettings.Development.json
+TestResults/
+**/TestResults/
+**/logs/
+docs/architecture/*.png
+docs/architecture/*.svg
+docs/architecture/*.html
